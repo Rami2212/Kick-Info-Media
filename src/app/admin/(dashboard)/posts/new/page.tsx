@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import AdminRichEditor from "../../components/AdminRichEditor";
 
 type Category = {
   id: string;
@@ -13,6 +15,7 @@ export default function NewPostPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
@@ -23,7 +26,9 @@ export default function NewPostPage() {
     content: "",
     cover_image_url: "",
     published: false,
+    highlight: false,
     seo_description: "",
+    seo_keywords: "",
   });
 
   useEffect(() => {
@@ -44,6 +49,32 @@ export default function NewPostPage() {
       ...prev,
       [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value
     }));
+  };
+
+  const uploadCoverImage = async (file: File) => {
+    setCoverUploading(true);
+    setError("");
+
+    try {
+      const uploadData = new FormData();
+      uploadData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadData,
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Cover image upload failed");
+      }
+
+      setFormData(prev => ({ ...prev, cover_image_url: data.url }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Cover image upload failed");
+    } finally {
+      setCoverUploading(false);
+    }
   };
 
   const generateSlug = () => {
@@ -82,77 +113,90 @@ export default function NewPostPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Create New Post</h2>
-        <Link href="/admin/posts" className="text-gray-500 hover:text-gray-700">Cancel</Link>
+    <div className="admin-page space-y-6">
+      <div className="admin-page-head">
+        <div>
+          <p className="admin-kicker">Editorial</p>
+          <h2 className="admin-title mt-2">Create New Post</h2>
+        </div>
+        <Link href="/admin/posts" className="admin-button admin-button-ghost">Cancel</Link>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md border border-red-200">
+        <div className="admin-alert admin-alert-error">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <form onSubmit={handleSubmit} className="admin-panel space-y-6">
+        <div className="admin-form-grid md:grid-cols-3">
           <div className="md:col-span-2 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-              <input 
+            <div className="admin-field">
+              <label className="admin-label">Title</label>
+              <input
                 type="text" 
                 name="title" 
                 required 
                 value={formData.title} 
                 onChange={handleChange}
                 onBlur={() => { if(!formData.slug) generateSlug(); }}
-                className="w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+                className="admin-input"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Excerpt</label>
-              <textarea 
+            <div className="admin-field">
+              <label className="admin-label">Excerpt</label>
+              <textarea
                 name="excerpt" 
                 rows={3}
                 value={formData.excerpt} 
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+                className="admin-textarea"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Content (Markdown/HTML)</label>
-              <textarea 
-                name="content" 
-                required 
-                rows={15}
-                value={formData.content} 
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+            <div className="admin-field">
+              <label className="admin-label">Content</label>
+              <AdminRichEditor
+                value={formData.content}
+                onChange={(content) => setFormData(prev => ({ ...prev, content }))}
               />
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+            <div className="rounded-md border border-white/10 bg-black/60 p-4">
               <label className="flex items-center space-x-3 cursor-pointer">
                 <input 
                   type="checkbox" 
                   name="published" 
                   checked={formData.published} 
                   onChange={handleChange}
-                  className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="h-4 w-4 text-[#1877c1] border-white/30 rounded"
                 />
-                <span className="text-gray-900 font-medium">Publish Post</span>
+                <span className="text-[#e8e9e9] font-heading text-[11px] uppercase tracking-[0.2em]">Publish Post</span>
               </label>
-              <p className="text-xs text-gray-500 mt-1 ml-8">If unchecked, this post will be saved as a draft.</p>
+              <p className="text-[10px] text-white/30 mt-2">If unchecked, this post will be saved as a draft.</p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="rounded-md border border-white/10 bg-black/60 p-4">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="highlight"
+                  checked={formData.highlight}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-[#7fb525] border-white/30 rounded"
+                />
+                <span className="text-[#e8e9e9] font-heading text-[11px] uppercase tracking-[0.2em]">Highlight Post</span>
+              </label>
+              <p className="text-[10px] text-white/30 mt-2">Highlighted posts appear in the homepage highlights section.</p>
+            </div>
+
+            <div className="admin-field">
+              <label className="admin-label">
                 URL Slug
-                <button type="button" onClick={generateSlug} className="ml-2 text-blue-600 hover:underline text-xs">Generate</button>
+                <button type="button" onClick={generateSlug} className="ml-2 text-[#7fb525] hover:text-white text-[10px]">Generate</button>
               </label>
               <input 
                 type="text" 
@@ -160,17 +204,17 @@ export default function NewPostPage() {
                 required 
                 value={formData.slug} 
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                className="admin-input"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select 
+            <div className="admin-field">
+              <label className="admin-label">Category</label>
+              <select
                 name="category_id" 
                 value={formData.category_id} 
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white focus:ring-blue-500 focus:border-blue-500"
+                className="admin-select"
               >
                 <option value="">No Category</option>
                 {categories.map(cat => (
@@ -179,36 +223,70 @@ export default function NewPostPage() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
-              <input 
+            <div className="admin-field">
+              <label className="admin-label">Cover Image URL</label>
+              <input
                 type="text" 
                 name="cover_image_url" 
                 value={formData.cover_image_url} 
                 onChange={handleChange}
                 placeholder="https://..."
-                className="w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                className="admin-input"
               />
+              <label className="admin-button admin-button-ghost mt-3 w-full cursor-pointer">
+                {coverUploading ? "Uploading..." : "Upload Cover Image"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadCoverImage(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {formData.cover_image_url && (
+                <Image
+                  src={formData.cover_image_url}
+                  alt="Cover preview"
+                  width={640}
+                  height={360}
+                  className="mt-3 w-full rounded-md border border-white/10 object-cover"
+                />
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">SEO Description</label>
-              <textarea 
+            <div className="admin-field">
+              <label className="admin-label">SEO Description</label>
+              <textarea
                 name="seo_description" 
                 rows={3}
                 value={formData.seo_description} 
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                className="admin-textarea"
+              />
+            </div>
+
+            <div className="admin-field">
+              <label className="admin-label">SEO Keywords</label>
+              <input
+                type="text"
+                name="seo_keywords"
+                value={formData.seo_keywords}
+                onChange={handleChange}
+                placeholder="football news, transfers, club updates"
+                className="admin-input"
               />
             </div>
           </div>
         </div>
 
-        <div className="pt-4 border-t border-gray-200 flex justify-end">
-          <button 
+        <div className="admin-form-actions">
+          <button
             type="submit" 
             disabled={saving}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            className="admin-button admin-button-blue disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Post"}
           </button>

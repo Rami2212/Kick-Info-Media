@@ -1,58 +1,71 @@
 import Link from "next/link";
 import { requireAdminAuth } from "@/lib/adminAuth";
-import { redirect } from "next/navigation";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const auth = await requireAdminAuth();
   
   if (!auth.ok) {
-    // If authenticated but not an admin, they shouldn't see the admin panel
-    // The middleware already handles unauthenticated users
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded shadow max-w-md w-full text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h2>
-          <p className="text-gray-700 mb-6">Your account ({auth.email}) does not have administrator privileges.</p>
-          <a href="/" className="text-blue-600 hover:underline">Return to site</a>
+      <div className="admin-shell flex items-center justify-center p-5">
+        <div className="admin-panel max-w-md w-full text-center">
+          <h2 className="font-display text-[28px] text-[#e8e9e9] mb-3">Access Denied</h2>
+          <p className="font-body text-[12px] text-white/50 mb-6">
+            Your account ({auth.email}) does not have administrator privileges.
+          </p>
+          <Link href="/" className="font-heading text-[10px] uppercase tracking-[0.2em] text-[#7fb525] hover:text-white">
+            Return to site →
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans text-gray-900">
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-gray-900 text-white flex-shrink-0">
-        <div className="p-4 border-b border-gray-800">
-          <Link href="/admin" className="text-xl font-bold tracking-wider">
-            KIM <span className="text-blue-400">Admin</span>
+    <div className="admin-shell">
+      <div className="admin-topbar">
+        <div className="admin-container min-h-[68px] py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/admin" className="font-display text-[20px] tracking-[0.12em]">
+            Kick<span className="text-[#1877c1]">Info</span><em className="text-[#7fb525] not-italic">Media</em>
+            <span className="ml-2 text-[10px] font-heading uppercase tracking-[0.25em] text-white/40">Admin</span>
           </Link>
-        </div>
-        <nav className="p-4 space-y-2">
-          <Link href="/admin" className="block px-4 py-2 rounded hover:bg-gray-800 transition-colors">Dashboard</Link>
-          <Link href="/admin/posts" className="block px-4 py-2 rounded hover:bg-gray-800 transition-colors">Posts</Link>
-          <Link href="/admin/categories" className="block px-4 py-2 rounded hover:bg-gray-800 transition-colors">Categories</Link>
-          <Link href="/admin/site-settings" className="block px-4 py-2 rounded hover:bg-gray-800 transition-colors">Site Settings</Link>
-        </nav>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-gray-800">Admin Console</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">{auth.email}</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="font-heading text-[10px] uppercase tracking-[0.16em] text-white/40 break-all">{auth.email}</span>
             <form action="/api/logout" method="POST">
-              <button type="submit" className="text-sm text-red-600 hover:text-red-800">Logout</button>
+              <button
+                type="submit"
+                className="font-heading text-[10px] uppercase tracking-[0.2em] text-[#7fb525] hover:text-white"
+              >
+                Logout
+              </button>
             </form>
           </div>
-        </header>
+        </div>
+      </div>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-auto p-6">
-          {children}
-        </main>
+      <div className="admin-container admin-grid">
+        <aside className="admin-sidebar overflow-hidden lg:sticky lg:top-6 lg:self-start">
+          <div className="admin-sidebar-head">
+            <p className="font-heading text-[10px] uppercase tracking-[0.25em] text-[#7fb525]">Admin Console</p>
+          </div>
+          <nav className="admin-sidebar-nav">
+            {[
+              { href: "/admin", label: "Dashboard" },
+              { href: "/admin/posts", label: "Posts" },
+              { href: "/admin/categories", label: "Categories" },
+              { href: "/admin/site-settings", label: "Site Settings" },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="admin-sidebar-link"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </aside>
+
+        <main className="min-w-0">{children}</main>
       </div>
     </div>
   );

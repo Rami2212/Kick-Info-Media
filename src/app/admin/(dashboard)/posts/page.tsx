@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 type Post = {
   id: string;
@@ -22,8 +21,6 @@ export default function AdminPostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
-
   useEffect(() => {
     async function fetchData() {
       try {
@@ -63,74 +60,81 @@ export default function AdminPostsPage() {
       } else {
         alert("Failed to delete post");
       }
-    } catch (err) {
+    } catch {
       alert("Error deleting post");
     }
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Manage Posts</h2>
-        <Link 
+    <div className="admin-page-wide">
+      <div className="admin-page-head">
+        <div>
+          <p className="admin-kicker">Editorial</p>
+          <h2 className="admin-title mt-2">Manage Posts</h2>
+        </div>
+        <Link
           href="/admin/posts/new" 
-          className="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors shadow-sm"
+          className="admin-button admin-button-blue"
         >
-          + Create New Post
+          Create New Post
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="admin-panel p-0 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading posts...</div>
+          <div className="p-8 text-center text-white/40">Loading posts...</div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th scope="col" className="px-6 py-3 text-left text-[10px] font-heading uppercase tracking-[0.2em] text-white/40">Title</th>
+                <th scope="col" className="px-6 py-3 text-left text-[10px] font-heading uppercase tracking-[0.2em] text-white/40">Category</th>
+                <th scope="col" className="px-6 py-3 text-left text-[10px] font-heading uppercase tracking-[0.2em] text-white/40">Status</th>
+                <th scope="col" className="px-6 py-3 text-left text-[10px] font-heading uppercase tracking-[0.2em] text-white/40">Date</th>
+                <th scope="col" className="px-6 py-3 text-right text-[10px] font-heading uppercase tracking-[0.2em] text-white/40">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-[#050505] divide-y divide-white/10">
               {posts.map((post) => (
-                <tr key={post.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 truncate max-w-xs">{post.title}</div>
-                    <div className="text-xs text-gray-500 truncate max-w-xs">{post.slug}</div>
+                <tr key={post.id} className="hover:bg-black/40 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="text-[12px] font-heading text-[#e8e9e9]/85 truncate max-w-xs">{post.title}</div>
+                    <div className="text-[10px] text-white/25 truncate max-w-xs">{post.slug}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-700 bg-gray-100 px-2 py-1 rounded">
+                  <td className="px-6 py-4">
+                    <span className="text-[10px] uppercase tracking-[0.15em] text-white/50 bg-black px-2 py-1 border border-white/10">
                       {categories[post.category_id] || "None"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      post.published ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  <td className="px-6 py-4">
+                    <span className={`admin-badge ${
+                      post.published ? "bg-[#7fb525] text-black" : "bg-[#1877c1] text-white"
                     }`}>
-                      {post.published ? 'Published' : 'Draft'}
+                      {post.published ? "Published" : "Draft"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 text-[10px] text-white/30">
                     {new Date(post.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link href={`/admin/posts/${post.id}`} className="text-blue-600 hover:text-blue-900 mr-4">Edit</Link>
-                    <button onClick={() => handleDelete(post.id)} className="text-red-600 hover:text-red-900">Delete</button>
+                  <td className="px-6 py-4 text-right">
+                    <div className="admin-action-group">
+                      <Link href={`/admin/posts/${post.id}`} className="admin-action-button admin-action-edit">Edit</Link>
+                      <button onClick={() => handleDelete(post.id)} className="admin-action-button admin-action-delete">Delete</button>
+                    </div>
                   </td>
                 </tr>
               ))}
               {posts.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                    No posts found. <Link href="/admin/posts/new" className="text-blue-600 hover:underline">Create your first post</Link>.
+                  <td colSpan={5} className="px-6 py-8 text-center text-white/40">
+                    No posts found. <Link href="/admin/posts/new" className="text-[#7fb525] hover:text-white">Create your first post</Link>.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

@@ -47,7 +47,7 @@ export default function ContactPage() {
       <div className="contact-page">
         <h1 className="contact-page-title">Get In Touch</h1>
         <p className="contact-page-desc">
-          Have a tip, question, or story idea? We'd love to hear from you.
+          Have a tip, question, or story idea? We&apos;d love to hear from you.
         </p>
 
         <form className="contact-form" onSubmit={handleSubmit}>

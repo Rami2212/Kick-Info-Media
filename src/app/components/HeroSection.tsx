@@ -5,6 +5,7 @@ type HeroSectionProps = {
     slug: string;
     title: string;
     excerpt: string;
+    coverImageUrl?: string;
     categoryName?: string;
     createdAt: string;
   }>;
@@ -34,14 +35,23 @@ export default function HeroSection({ posts }: HeroSectionProps) {
   return (
     <section className="hero">
       <div className="section-head">
-        <span className="section-label">Today's Top Stories</span>
+        <span className="section-label">Today&apos;s Top Stories</span>
         <div className="section-line"></div>
         <Link href="#" className="section-all">All Stories →</Link>
       </div>
 
       <div className="hero-grid">
         <Link href={`/posts/${mainPost.slug}`} className="hero-main">
-          <div className="hero-bg"></div>
+          <div
+            className="hero-bg"
+            style={
+              mainPost.coverImageUrl
+                ? {
+                    backgroundImage: `linear-gradient(135deg, rgba(8, 20, 36, 0.68), rgba(5, 5, 5, 0.72)), url(${mainPost.coverImageUrl})`,
+                  }
+                : undefined
+            }
+          ></div>
           <div className="hero-pitch"></div>
           <div className="hero-circle"></div>
           <div className="hero-num">01</div>
@@ -49,7 +59,6 @@ export default function HeroSection({ posts }: HeroSectionProps) {
           <div className="hero-content">
             <div className="hero-badges">
               {mainPost.categoryName && <span className="badge badge-blue">{mainPost.categoryName}</span>}
-              <span className="badge badge-green">Exclusive</span>
             </div>
             <h1 className="hero-title">{mainPost.title}</h1>
             <p className="hero-excerpt">{mainPost.excerpt}</p>
@@ -66,14 +75,6 @@ export default function HeroSection({ posts }: HeroSectionProps) {
         {sidePosts.length > 0 && (
           <div className="hero-side">
             {sidePosts.map((post, index) => {
-              const bgGradient = index === 1 
-                ? 'linear-gradient(135deg, #0d1a0a, #0a0a0a)' 
-                : index === 2 
-                  ? 'linear-gradient(135deg, #1a0a0a, #0a0a0a)' 
-                  : undefined;
-              
-              const badgeClass = index === 1 ? 'badge-green' : 'badge-blue';
-              
               const dateStr = new Date(post.createdAt).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -82,16 +83,20 @@ export default function HeroSection({ posts }: HeroSectionProps) {
 
               return (
                 <Link key={post.slug} href={`/posts/${post.slug}`} className="side-card">
-                  <div className="side-bg" style={{ background: bgGradient }}></div>
+                  <div
+                    className="side-bg"
+                    style={
+                      post.coverImageUrl
+                        ? {
+                            backgroundImage: `linear-gradient(140deg, rgba(8, 16, 26, 0.66), rgba(10, 10, 10, 0.76)), url(${post.coverImageUrl})`,
+                          }
+                        : undefined
+                    }
+                  ></div>
                   <div className="side-overlay"></div>
                   <div className="side-num">0{index + 2}</div>
                   <div className="side-accent"></div>
                   <div className="side-content">
-                    {post.categoryName && (
-                      <span className={`badge ${badgeClass}`} style={index === 1 ? { color: '#000' } : {}}>
-                        {post.categoryName}
-                      </span>
-                    )}
                     <p className="side-title">{post.title}</p>
                     <span className="side-date">{dateStr}</span>
                   </div>

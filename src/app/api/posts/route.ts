@@ -45,6 +45,7 @@ export async function POST(req: Request) {
     category_id,
     media,
     published,
+    highlight,
     seo_description,
     seo_keywords,
     meta_description,
@@ -72,6 +73,7 @@ export async function POST(req: Request) {
     category_id,
     media,
     published: !!published,
+    highlight: !!highlight,
     seo_description: seo_description ?? meta_description,
     seo_keywords: seo_keywords ?? meta_keywords,
   });
@@ -97,6 +99,7 @@ export async function PUT(req: Request) {
     category_id,
     media,
     published,
+    highlight,
     seo_description,
     seo_keywords,
     meta_description,
@@ -124,6 +127,7 @@ export async function PUT(req: Request) {
     category_id,
     media,
     published: !!published,
+    highlight: !!highlight,
     seo_description: seo_description ?? meta_description,
     seo_keywords: seo_keywords ?? meta_keywords,
   });

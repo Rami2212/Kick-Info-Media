@@ -1,9 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
 
 type CategoryGridProps = {
   categories: Array<{
     slug: string;
     name: string;
+    imageUrl?: string;
     articleCount: number;
   }>;
 };
@@ -37,7 +39,17 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         <div className="cats-grid">
           {categories.map((cat) => (
             <Link key={cat.slug} href={`/category/${cat.slug}`} className="cat-card">
-              <span className="cat-icon">{categoryIcons[cat.slug] || categoryIcons.default}</span>
+              {cat.imageUrl ? (
+                <Image
+                  src={cat.imageUrl}
+                  alt={cat.name}
+                  width={46}
+                  height={46}
+                  className="cat-image"
+                />
+              ) : (
+                <span className="cat-icon">{categoryIcons[cat.slug] || categoryIcons.default}</span>
+              )}
               <p className="cat-name">{cat.name}</p>
               <p className="cat-count">{cat.articleCount} articles</p>
               <div className="cat-bar"></div>

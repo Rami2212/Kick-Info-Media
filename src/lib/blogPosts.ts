@@ -19,6 +19,7 @@ export type BlogPost = {
   seo_description: string;
   seo_keywords: string;
   published: boolean;
+  highlight: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -64,6 +65,7 @@ function toPost(doc: BlogPostDoc): BlogPost {
     seo_description: doc.seo_description || doc.meta_description || "",
     seo_keywords: doc.seo_keywords || doc.meta_keywords || "",
     published: !!doc.published,
+    highlight: !!doc.highlight,
     created_at: doc.created_at,
     updated_at: doc.updated_at,
   };
@@ -112,6 +114,7 @@ export async function createBlogPost(input: {
   category_id?: string;
   media?: BlogMediaItem[];
   published?: boolean;
+  highlight?: boolean;
   seo_description?: string;
   seo_keywords?: string;
 }): Promise<BlogPost> {
@@ -129,6 +132,7 @@ export async function createBlogPost(input: {
     seo_description: normalizeText(input.seo_description),
     seo_keywords: normalizeText(input.seo_keywords),
     published: !!input.published,
+    highlight: !!input.highlight,
     created_at: now,
     updated_at: now,
   };
@@ -148,6 +152,7 @@ export async function updateBlogPost(
     category_id?: string;
     media?: BlogMediaItem[];
     published?: boolean;
+    highlight?: boolean;
     seo_description?: string;
     seo_keywords?: string;
   },
@@ -164,6 +169,7 @@ export async function updateBlogPost(
     seo_description: normalizeText(input.seo_description),
     seo_keywords: normalizeText(input.seo_keywords),
     published: !!input.published,
+    highlight: !!input.highlight,
     updated_at: new Date().toISOString(),
   };
 

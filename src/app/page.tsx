@@ -1,20 +1,24 @@
+import type { Metadata } from "next";
 import { listBlogPosts } from "@/lib/blogPosts";
 import { listCategories } from "@/lib/categories";
+import { getHomePostSelections, getNextMatchSettings, getSiteSettings } from "@/lib/siteSettings";
 import HeroSection from "./components/HeroSection";
 import CategoryGrid from "./components/CategoryGrid";
 import BlogCard from "./components/BlogCard";
 import SidebarBlock from "./components/SidebarBlock";
-import Link from "next/link";
-import type { Metadata } from "next";
+import WorldCupBracketGame from "./components/WorldCupBracketGame";
 
 export const metadata: Metadata = {
-  title: "KickInfoMedia — Breaking Football News, Transfers & Analysis",
+  title: "KickInfoMedia â€” Breaking Football News, Transfers & Analysis",
   description: "The premier destination for breaking football news, tactical analysis, and live coverage from across the globe.",
 };
 
 export default async function Home() {
   const posts = await listBlogPosts({ publishedOnly: true });
   const categories = await listCategories();
+  const settings = await getSiteSettings();
+  const homeSelections = getHomePostSelections(settings);
+  const nextMatch = getNextMatchSettings(settings);
 
   const categoryMap = new Map<string, string>();
   const categoryCounts = new Map<string, number>();
@@ -24,35 +28,47 @@ export default async function Home() {
     categoryCounts.set(cat.id, 0);
   }
 
-  // Calculate article counts per category
   for (const post of posts) {
     if (post.category_id && categoryCounts.has(post.category_id)) {
       categoryCounts.set(post.category_id, categoryCounts.get(post.category_id)! + 1);
     }
   }
 
-  // Format data for components
-  const heroPostsData = posts.slice(0, 4).map(post => ({
+  const postsById = new Map(posts.map((post) => [post.id, post]));
+  const pickPosts = (selectedIds: string[], count: number, fallbackPosts: typeof posts) => {
+    const selected: typeof posts = [];
+    for (const id of selectedIds) {
+      const post = postsById.get(id);
+      if (post && !selected.some((item) => item.id === post.id)) selected.push(post);
+    }
+    const selectedIdsSet = new Set(selected.map((post) => post.id));
+    const fallback = fallbackPosts.filter((post) => !selectedIdsSet.has(post.id));
+    return [...selected, ...fallback].slice(0, count);
+  };
+
+  const heroPosts = pickPosts(homeSelections.heroPostIds, 4, posts);
+  const topStoryPosts = pickPosts(homeSelections.topStoryPostIds, 4, posts);
+  const highlightPosts = posts.filter((post) => post.highlight).slice(0, 6);
+
+  const heroPostsData = heroPosts.map((post) => ({
     slug: post.slug,
     title: post.title,
     excerpt: post.excerpt,
+    coverImageUrl: post.cover_image_url,
     categoryName: categoryMap.get(post.category_id),
     createdAt: post.created_at,
   }));
 
-  const latestPosts = posts.length >= 4 ? posts.slice(4, 10) : posts;
-  
-  const trendingPosts = posts.slice(0, 5).map(post => ({
+  const trendingPosts = topStoryPosts.map((post) => ({
     slug: post.slug,
     title: post.title,
     categoryName: categoryMap.get(post.category_id),
   }));
 
-  const editorPosts = posts.length >= 8 ? posts.slice(4, 8) : posts.slice(0, 4);
-
-  const categoryGridData = categories.map(cat => ({
+  const categoryGridData = categories.map((cat) => ({
     slug: cat.slug,
     name: cat.name,
+    imageUrl: cat.image_url,
     articleCount: categoryCounts.get(cat.id) || 0,
   }));
 
@@ -61,53 +77,55 @@ export default async function Home() {
       <HeroSection posts={heroPostsData} />
       <CategoryGrid categories={categoryGridData} />
 
-      <section className="blog">
-        <div className="blog-head">
-          <div>
-            <p className="blog-sub">What's New</p>
-            <h2 className="blog-title">Latest Articles</h2>
-          </div>
-          {/* Note: Filters require client components to be interactive, so they are omitted from the server component for now, as requested. */}
-        </div>
-        <div className="blog-grid">
-          {latestPosts.map((post, index) => (
-            <BlogCard
-              key={post.id}
-              slug={post.slug}
-              title={post.title}
-              excerpt={post.excerpt}
-              categoryName={categoryMap.get(post.category_id)}
-              published={post.published}
-              createdAt={post.created_at}
-              accentColor={index % 2 !== 0 ? 'green' : 'blue'}
-            />
-          ))}
-        </div>
-      </section>
-
       <section className="lower">
         <div className="editor-block">
-          <div className="section-head" style={{ marginBottom: '8px' }}>
-            <span className="section-label">More Coverage</span>
+          <div className="section-head" style={{ marginBottom: "8px" }}>
+            <span className="section-label">World Cup Game</span>
             <div className="section-line"></div>
           </div>
-          <h3 className="editor-title">Editor Highlights</h3>
-          <p className="editor-desc">Quick reads, tactical breakdowns, and expert analysis from across the football world.</p>
-          <div className="editor-grid">
-            {editorPosts.map(post => (
-              <Link key={`editor-${post.id}`} href={`/posts/${post.slug}`} className="editor-item">
-                <p className="editor-item-title">{post.title}</p>
-                <p className="editor-item-excerpt">
-                  {post.excerpt.length > 100 ? `${post.excerpt.substring(0, 100)}...` : post.excerpt}
-                </p>
-              </Link>
-            ))}
-          </div>
+          <h3 className="editor-title">FIFA World Cup Next Match Poll</h3>
+          <p className="editor-desc">Pick your winner for the next match and watch live vote percentages update.</p>
+          <WorldCupBracketGame
+            matchId={nextMatch.matchId}
+            teamA={nextMatch.teamA}
+            teamB={nextMatch.teamB}
+            initialVotes={{ [nextMatch.matchId]: nextMatch.votes }}
+          />
         </div>
 
         <aside className="sidebar">
           <SidebarBlock trendingPosts={trendingPosts} />
         </aside>
+      </section>
+
+      <section className="blog">
+        <div className="blog-head">
+          <div>
+            <p className="blog-sub">Highlights</p>
+            <h2 className="blog-title">Featured Stories</h2>
+          </div>
+        </div>
+        {highlightPosts.length > 0 ? (
+          <div className="blog-grid">
+            {highlightPosts.map((post, index) => (
+              <BlogCard
+                key={post.id}
+                slug={post.slug}
+                title={post.title}
+                excerpt={post.excerpt}
+                coverImageUrl={post.cover_image_url}
+                categoryName={categoryMap.get(post.category_id)}
+                published={post.published}
+                createdAt={post.created_at}
+                accentColor={index % 2 !== 0 ? "green" : "blue"}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="admin-panel">
+            <p className="empty-state-desc">No highlighted posts yet.</p>
+          </div>
+        )}
       </section>
     </main>
   );
