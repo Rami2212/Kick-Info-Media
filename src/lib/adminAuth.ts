@@ -1,16 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { getMongoDb } from "@/lib/mongodb";
 
 export type AdminAuthResult = {
   ok: boolean;
   email: string;
 };
-
-function parseCsv(value: string | undefined): string[] {
-  return (value || "")
-    .split(",")
-    .map((v) => v.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 export async function requireAdminAuth(): Promise<AdminAuthResult> {
   const supabase = await createClient();
@@ -23,12 +17,13 @@ export async function requireAdminAuth(): Promise<AdminAuthResult> {
   const email = String(user.email || "").trim().toLowerCase();
   if (!email) return { ok: false, email: "" };
 
-  const adminEmails = parseCsv(process.env.ADMIN_EMAILS);
-  if (adminEmails.length === 0) {
-    // Backward-compatible fallback if allowlist is not configured.
-    return { ok: true, email };
-  }
+  const db = await getMongoDb();
+  const dbUser = await db.collection("users").findOne(
+    { email },
+    { projection: { role: 1 } },
+  );
 
-  return { ok: adminEmails.includes(email), email };
+  const role = typeof dbUser?.role === "string" ? dbUser.role.toLowerCase() : "";
+  return { ok: role === "admin", email };
 }
 

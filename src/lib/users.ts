@@ -3,7 +3,7 @@ import { promisify } from "util";
 import { getMongoDb } from "@/lib/mongodb";
 
 export type Gender = "male" | "female" | "couple" | "transgender";
-export type SexualOrientation = "straight" | "gay" | "lesbian" | "bisexual" | "transgender";
+export type UserRole = "user" | "admin";
 
 export interface PublicUserProfile {
   id: string;
@@ -14,7 +14,6 @@ export interface PublicUserProfile {
   bio: string;
   birthday: string;
   gender: Gender | "";
-  sexualOrientation: SexualOrientation | "";
   profileImageUrl: string;
   createdAt: string;
   updatedAt: string;
@@ -29,6 +28,7 @@ export interface UserDoc extends PublicUserProfile {
   country?: string;
   phone?: string;
   membership?: string;
+  role?: UserRole;
 }
 
 type UserInput = {
@@ -43,7 +43,6 @@ type ProfileUpdateInput = {
   bio?: string;
   birthday?: string;
   gender?: Gender | "";
-  sexualOrientation?: SexualOrientation | "";
   profileImageUrl?: string;
 };
 
@@ -87,7 +86,6 @@ export function toPublicProfile(user: UserDoc): PublicUserProfile {
     bio: user.bio || "",
     birthday: user.birthday || "",
     gender: user.gender || "",
-    sexualOrientation: user.sexualOrientation || "",
     profileImageUrl: user.profileImageUrl || "",
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -157,8 +155,8 @@ export async function createUserWithPassword(input: UserInput): Promise<UserDoc>
     bio: "",
     birthday: "",
     gender: "",
-    sexualOrientation: "",
     profileImageUrl: "",
+    role: "user",
     createdAt: now,
     updatedAt: now,
   };
@@ -221,8 +219,8 @@ export async function upsertGoogleUser(params: {
     bio: "",
     birthday: "",
     gender: "",
-    sexualOrientation: "",
     profileImageUrl: params.image || "",
+    role: "user",
     createdAt: now,
     updatedAt: now,
   };
@@ -242,7 +240,6 @@ export async function updateUserProfileById(id: string, updates: ProfileUpdateIn
   if (typeof updates.bio === "string") next.bio = updates.bio.trim();
   if (typeof updates.birthday === "string") next.birthday = updates.birthday;
   if (typeof updates.gender === "string") next.gender = updates.gender;
-  if (typeof updates.sexualOrientation === "string") next.sexualOrientation = updates.sexualOrientation;
   if (typeof updates.profileImageUrl === "string") next.profileImageUrl = updates.profileImageUrl;
 
   await col.updateOne({ id }, { $set: next });
@@ -288,8 +285,8 @@ export async function createUserProfile(input: {
     bio: "",
     birthday: "",
     gender: "",
-    sexualOrientation: "",
     profileImageUrl: normalizeLooseText(input.profileImageUrl),
+    role: "user",
     createdAt: now,
     updatedAt: now,
   };
@@ -383,7 +380,6 @@ export async function listPublicUsers(limit = 60): Promise<PublicUserProfile[]> 
           bio: 1,
           birthday: 1,
           gender: 1,
-          sexualOrientation: 1,
           profileImageUrl: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -414,7 +410,6 @@ export async function listAllPublicUsers(): Promise<PublicUserProfile[]> {
           bio: 1,
           birthday: 1,
           gender: 1,
-          sexualOrientation: 1,
           profileImageUrl: 1,
           createdAt: 1,
           updatedAt: 1,

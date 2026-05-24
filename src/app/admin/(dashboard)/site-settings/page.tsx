@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DEFAULT_RANKINGS_JSON, parseRankingsJsonText } from "@/lib/rankings";
 
 type BlogOption = {
   id: string;
@@ -18,6 +19,7 @@ type SettingsFormData = {
   nextMatchTeamAFlagImageUrl: string;
   nextMatchTeamBName: string;
   nextMatchTeamBFlagImageUrl: string;
+  rankingsJson: string;
 };
 
 function normalizePostIds(value: unknown): string[] {
@@ -73,6 +75,7 @@ export default function SiteSettingsPage() {
     nextMatchTeamAFlagImageUrl: "",
     nextMatchTeamBName: "",
     nextMatchTeamBFlagImageUrl: "",
+    rankingsJson: DEFAULT_RANKINGS_JSON,
   });
 
   useEffect(() => {
@@ -104,6 +107,7 @@ export default function SiteSettingsPage() {
             nextMatchTeamAFlagImageUrl: normalizeText(data.extra?.nextMatchTeamAFlagImageUrl),
             nextMatchTeamBName: normalizeText(data.extra?.nextMatchTeamBName),
             nextMatchTeamBFlagImageUrl: normalizeText(data.extra?.nextMatchTeamBFlagImageUrl),
+            rankingsJson: normalizeText(data.extra?.rankingsJson) || DEFAULT_RANKINGS_JSON,
           });
         }
       } catch (err) {
@@ -173,6 +177,10 @@ export default function SiteSettingsPage() {
     setSuccess(false);
 
     try {
+      if (!parseRankingsJsonText(formData.rankingsJson)) {
+        throw new Error("Rankings JSON is invalid. Please include men/women arrays with rank, team, and points.");
+      }
+
       const res = await fetch("/api/site-settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -187,6 +195,7 @@ export default function SiteSettingsPage() {
             nextMatchTeamAFlagImageUrl: formData.nextMatchTeamAFlagImageUrl.trim(),
             nextMatchTeamBName: formData.nextMatchTeamBName.trim(),
             nextMatchTeamBFlagImageUrl: formData.nextMatchTeamBFlagImageUrl.trim(),
+            rankingsJson: formData.rankingsJson.trim(),
           },
         }),
       });
@@ -228,7 +237,7 @@ export default function SiteSettingsPage() {
       <div className="admin-panel">
         <p className="admin-kicker">Configuration</p>
         <h2 className="admin-title mt-2">Site Settings</h2>
-        <p className="admin-subtitle">Manage top bar text, homepage blog placement, and next-match poll teams.</p>
+        <p className="admin-subtitle">Manage top bar text, homepage blog placement, next-match poll teams, and rankings JSON.</p>
       </div>
 
       {success && (
@@ -412,6 +421,24 @@ export default function SiteSettingsPage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="border-t border-white/10 pt-6 space-y-4">
+          <h3 className="font-display text-[18px] text-[#e8e9e9]">Rankings JSON</h3>
+          <p className="admin-subtitle !mt-0">
+            Update Men and Women rankings using JSON. Required fields per row: rank, team, and points (code is optional).
+          </p>
+          <div className="admin-field">
+            <label className="admin-label">Rankings Data JSON</label>
+            <textarea
+              name="rankingsJson"
+              value={formData.rankingsJson}
+              onChange={handleChange}
+              className="admin-textarea"
+              rows={18}
+              spellCheck={false}
+            />
           </div>
         </div>
 

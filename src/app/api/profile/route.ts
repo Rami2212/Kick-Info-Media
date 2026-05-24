@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { auth } from "@/lib/googleAuth";
 import { getUserById, toPublicProfile, updateUserProfileById } from "@/lib/users";
 
 export async function GET() {
@@ -29,7 +29,6 @@ export async function PUT(req: Request) {
     bio: typeof body?.bio === "string" ? body.bio : undefined,
     birthday: typeof body?.birthday === "string" ? body.birthday : undefined,
     gender: typeof body?.gender === "string" ? body.gender : undefined,
-    sexualOrientation: typeof body?.sexualOrientation === "string" ? body.sexualOrientation : undefined,
   });
 
   if (!updated) return NextResponse.json({ error: "User not found" }, { status: 404 });

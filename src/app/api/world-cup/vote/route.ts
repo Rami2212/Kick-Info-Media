@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getNextMatchSettings, getSiteSettings, getWorldCupSettings, incrementWorldCupVote } from "@/lib/siteSettings";
+import { auth } from "@/lib/googleAuth";
 
 type VotePayload = {
   matchId?: unknown;
@@ -15,6 +16,11 @@ function parsePayload(payload: VotePayload): { matchId: string; side: "a" | "b" 
 }
 
 export async function POST(req: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Please login to vote." }, { status: 401 });
+  }
+
   let body: VotePayload;
   try {
     body = (await req.json()) as VotePayload;

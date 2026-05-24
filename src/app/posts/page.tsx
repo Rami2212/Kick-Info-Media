@@ -3,6 +3,9 @@ import { listCategories } from "@/lib/categories";
 import BlogCard from "../components/BlogCard";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type Props = {
   searchParams: Promise<{
     category?: string;

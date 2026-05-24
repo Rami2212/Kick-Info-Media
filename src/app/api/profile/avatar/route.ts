@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
-import { auth } from "@/auth";
+import { auth } from "@/lib/googleAuth";
 import { updateUserProfileById } from "@/lib/users";
 
 cloudinary.config({

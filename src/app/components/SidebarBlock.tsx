@@ -41,41 +41,41 @@ export default function SidebarBlock({ trendingPosts }: SidebarBlockProps) {
       </div>
 
       {/* Poll */}
-      <div className="sidebar-block">
-        <div className="sidebar-header"><span className="sidebar-title">Fan Poll</span></div>
-        <div className="poll-inner">
-          <p className="poll-q">Who wins the 2026 Champions League?</p>
-          <div className="poll-opt">
-            <div className="poll-bar" style={{ width: '38%' }}></div>
-            <div className="poll-opt-inner">
-              <span className="poll-label">Real Madrid</span>
-              <span className="poll-pct">38%</span>
-            </div>
-          </div>
-          <div className="poll-opt">
-            <div className="poll-bar" style={{ width: '27%' }}></div>
-            <div className="poll-opt-inner">
-              <span className="poll-label">Man City</span>
-              <span className="poll-pct">27%</span>
-            </div>
-          </div>
-          <div className="poll-opt">
-            <div className="poll-bar" style={{ width: '19%' }}></div>
-            <div className="poll-opt-inner">
-              <span className="poll-label">Bayern Munich</span>
-              <span className="poll-pct">19%</span>
-            </div>
-          </div>
-          <div className="poll-opt">
-            <div className="poll-bar" style={{ width: '16%' }}></div>
-            <div className="poll-opt-inner">
-              <span className="poll-label">Arsenal</span>
-              <span className="poll-pct">16%</span>
-            </div>
-          </div>
-          <p className="poll-total">12,483 votes · Results update live</p>
-        </div>
-      </div>
+      {/*<div className="sidebar-block">*/}
+      {/*  <div className="sidebar-header"><span className="sidebar-title">Fan Poll</span></div>*/}
+      {/*  <div className="poll-inner">*/}
+      {/*    <p className="poll-q">Who wins the 2026 Champions League?</p>*/}
+      {/*    <div className="poll-opt">*/}
+      {/*      <div className="poll-bar" style={{ width: '38%' }}></div>*/}
+      {/*      <div className="poll-opt-inner">*/}
+      {/*        <span className="poll-label">Real Madrid</span>*/}
+      {/*        <span className="poll-pct">38%</span>*/}
+      {/*      </div>*/}
+      {/*    </div>*/}
+      {/*    <div className="poll-opt">*/}
+      {/*      <div className="poll-bar" style={{ width: '27%' }}></div>*/}
+      {/*      <div className="poll-opt-inner">*/}
+      {/*        <span className="poll-label">Man City</span>*/}
+      {/*        <span className="poll-pct">27%</span>*/}
+      {/*      </div>*/}
+      {/*    </div>*/}
+      {/*    <div className="poll-opt">*/}
+      {/*      <div className="poll-bar" style={{ width: '19%' }}></div>*/}
+      {/*      <div className="poll-opt-inner">*/}
+      {/*        <span className="poll-label">Bayern Munich</span>*/}
+      {/*        <span className="poll-pct">19%</span>*/}
+      {/*      </div>*/}
+      {/*    </div>*/}
+      {/*    <div className="poll-opt">*/}
+      {/*      <div className="poll-bar" style={{ width: '16%' }}></div>*/}
+      {/*      <div className="poll-opt-inner">*/}
+      {/*        <span className="poll-label">Arsenal</span>*/}
+      {/*        <span className="poll-pct">16%</span>*/}
+      {/*      </div>*/}
+      {/*    </div>*/}
+      {/*    <p className="poll-total">12,483 votes · Results update live</p>*/}
+      {/*  </div>*/}
+      {/*</div>*/}
     </>
   );
 }

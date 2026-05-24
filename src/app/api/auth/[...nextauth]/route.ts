@@ -1,4 +1,4 @@
-import { handlers } from "@/auth";
+import { handlers } from "@/lib/googleAuth";
 
 export const { GET, POST } = handlers;
 

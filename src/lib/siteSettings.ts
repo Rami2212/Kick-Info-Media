@@ -12,6 +12,12 @@ import {
   type WorldCupMatchConfig,
   type WorldCupVotes,
 } from "@/lib/worldCupGame";
+import {
+  DEFAULT_RANKINGS_JSON,
+  getDefaultRankingsData,
+  parseRankingsJsonText,
+  type RankingsData,
+} from "@/lib/rankings";
 
 export type CoverPageSettings = {
   title: string;
@@ -53,6 +59,10 @@ export type NextMatchSettings = {
   teamB: NextMatchTeam;
   votes: WorldCupMatchVote;
   hasTeams: boolean;
+};
+
+export type RankingsSettings = RankingsData & {
+  rankingsJson: string;
 };
 
 type SiteSettingsDoc = SiteSettings & {
@@ -144,6 +154,17 @@ export function getNextMatchSettings(settings: SiteSettings): NextMatchSettings 
     },
     votes: matchVotes,
     hasTeams: !!teamAName && !!teamBName,
+  };
+}
+
+export function getRankingsSettings(settings: SiteSettings): RankingsSettings {
+  const raw = normalizeText(settings.extra.rankingsJson);
+  const parsed = parseRankingsJsonText(raw);
+  const data = parsed || getDefaultRankingsData();
+
+  return {
+    ...data,
+    rankingsJson: raw || DEFAULT_RANKINGS_JSON,
   };
 }
 
