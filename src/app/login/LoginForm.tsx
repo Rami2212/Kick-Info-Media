@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 type LoginFormProps = {
@@ -11,11 +11,20 @@ type LoginFormProps = {
 
 export default function LoginForm({ googleEnabled }: LoginFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const authErrorCode = searchParams.get("error");
+  const authErrorMessage =
+    authErrorCode === "Configuration"
+      ? "Login is not configured on server yet. Add AUTH_SECRET (or NEXTAUTH_SECRET), NEXTAUTH_URL/AUTH_URL, and redeploy."
+      : authErrorCode
+        ? "Login failed. Please try again."
+        : "";
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -62,7 +71,9 @@ export default function LoginForm({ googleEnabled }: LoginFormProps) {
         <h1 className="auth-title">Login</h1>
         <p className="auth-subtitle">Sign in with your email/password or continue with Google.</p>
 
-        {error && <div className="admin-alert admin-alert-error">{error}</div>}
+        {(error || authErrorMessage) && (
+          <div className="admin-alert admin-alert-error">{error || authErrorMessage}</div>
+        )}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="admin-field">
