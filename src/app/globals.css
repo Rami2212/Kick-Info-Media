@@ -5223,7 +5223,7 @@ main > section + section {
     min-width: 0;
     gap: 6px;
   }
-  .rankings-team span {
+.rankings-team span {
     display: block;
     min-width: 0;
     overflow: hidden;
@@ -5235,3 +5235,97 @@ main > section + section {
     height: 12px;
   }
 }
+
+/* ── NOT FOUND PAGE ── */
+.not-found-shell {
+  min-height: calc(100vh - 240px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0 72px;
+}
+
+.not-found-card {
+  width: min(100% - 32px, 1200px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 48px;
+  background: linear-gradient(135deg, rgba(24, 119, 193, 0.08), rgba(127, 181, 37, 0.08)),
+    rgba(5, 5, 5, 0.9);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+}
+
+.not-found-kicker {
+  font-family: var(--heading);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+
+.not-found-title {
+  margin-top: 14px;
+  font-family: var(--display);
+  font-size: clamp(32px, 4vw, 52px);
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.not-found-copy {
+  margin-top: 14px;
+  max-width: 640px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: rgba(232, 233, 233, 0.7);
+}
+
+.not-found-actions {
+  margin-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.not-found-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-family: var(--heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.not-found-btn-primary {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(24, 119, 193, 0.35);
+}
+
+.not-found-btn-primary:hover {
+  transform: translateY(-1px);
+  background: var(--blue-dark);
+}
+
+.not-found-btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(232, 233, 233, 0.7);
+  background: transparent;
+}
+
+.not-found-btn-ghost:hover {
+  border-color: rgba(127, 181, 37, 0.6);
+  color: #fff;
+}
+
+@media (max-width: 720px) {
+  .not-found-card {
+    padding: 32px 24px;
+  }
+}
+
