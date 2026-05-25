@@ -1,188 +1,201 @@
 import type { Metadata } from "next";
-import type { CSSProperties } from "react";
+import { AdSideRail, AutoStackedAdSideRail } from "@/app/components/ads/Ads";
+import { getScheduleBracketSettings, getSiteSettings } from "@/lib/siteSettings";
 
 export const metadata: Metadata = {
   title: "FIFA World Cup 2026 | KickInfoMedia",
-  description: "FIFA World Cup 2026 standings and knockout bracket schedule.",
+  description: "FIFA World Cup 2026 match schedule.",
 };
 
-type TeamRow = { name: string; flag: string };
-type Group = { name: string; teams: TeamRow[] };
+type Fixture = {
+  id: string;
+  stage: string;
+  date: string;
+  time: string;
+  slotA: number;
+  slotB: number;
+};
 
-const groups: Group[] = [
-  { name: "Group A", teams: [{ name: "Mexico", flag: "mx" }, { name: "South Africa", flag: "za" }, { name: "Korea Republic", flag: "kr" }, { name: "Czechia", flag: "cz" }] },
-  { name: "Group B", teams: [{ name: "Canada", flag: "ca" }, { name: "Bosnia and Herzegovina", flag: "ba" }, { name: "Qatar", flag: "qa" }, { name: "Switzerland", flag: "ch" }] },
-  { name: "Group C", teams: [{ name: "Brazil", flag: "br" }, { name: "Morocco", flag: "ma" }, { name: "Haiti", flag: "ht" }, { name: "Scotland", flag: "gb-sct" }] },
-  { name: "Group D", teams: [{ name: "USA", flag: "us" }, { name: "Paraguay", flag: "py" }, { name: "Australia", flag: "au" }, { name: "Türkiye", flag: "tr" }] },
-  { name: "Group E", teams: [{ name: "Germany", flag: "de" }, { name: "Curaçao", flag: "cw" }, { name: "Côte d'Ivoire", flag: "ci" }, { name: "Ecuador", flag: "ec" }] },
-  { name: "Group F", teams: [{ name: "Netherlands", flag: "nl" }, { name: "Japan", flag: "jp" }, { name: "Sweden", flag: "se" }, { name: "Tunisia", flag: "tn" }] },
-  { name: "Group G", teams: [{ name: "Belgium", flag: "be" }, { name: "Egypt", flag: "eg" }, { name: "IR Iran", flag: "ir" }, { name: "New Zealand", flag: "nz" }] },
-  { name: "Group H", teams: [{ name: "Spain", flag: "es" }, { name: "Cabo Verde", flag: "cv" }, { name: "Saudi Arabia", flag: "sa" }, { name: "Uruguay", flag: "uy" }] },
-  { name: "Group I", teams: [{ name: "France", flag: "fr" }, { name: "Senegal", flag: "sn" }, { name: "Iraq", flag: "iq" }, { name: "Norway", flag: "no" }] },
-  { name: "Group J", teams: [{ name: "Argentina", flag: "ar" }, { name: "Algeria", flag: "dz" }, { name: "Austria", flag: "at" }, { name: "Jordan", flag: "jo" }] },
-  { name: "Group K", teams: [{ name: "Portugal", flag: "pt" }, { name: "Congo DR", flag: "cd" }, { name: "Uzbekistan", flag: "uz" }, { name: "Colombia", flag: "co" }] },
-  { name: "Group L", teams: [{ name: "England", flag: "gb-eng" }, { name: "Croatia", flag: "hr" }, { name: "Ghana", flag: "gh" }, { name: "Panama", flag: "pa" }] },
+const FIXTURES: Fixture[] = [
+  { id: "M74", stage: "Round of 32", date: "06/30/2026", time: "02:00", slotA: 1, slotB: 2 },
+  { id: "M76", stage: "Round of 32", date: "06/29/2026", time: "22:30", slotA: 47, slotB: 48 },
+  { id: "M77", stage: "Round of 32", date: "07/01/2026", time: "02:30", slotA: 3, slotB: 4 },
+  { id: "M78", stage: "Round of 32", date: "06/30/2026", time: "22:30", slotA: 49, slotB: 50 },
+  { id: "M73", stage: "Round of 32", date: "06/29/2026", time: "00:30", slotA: 5, slotB: 6 },
+  { id: "M79", stage: "Round of 32", date: "07/01/2026", time: "06:30", slotA: 51, slotB: 52 },
+  { id: "M75", stage: "Round of 32", date: "06/30/2026", time: "06:30", slotA: 7, slotB: 8 },
+  { id: "M80", stage: "Round of 32", date: "07/01/2026", time: "21:30", slotA: 53, slotB: 54 },
+  { id: "M83", stage: "Round of 32", date: "07/03/2026", time: "04:30", slotA: 9, slotB: 10 },
+  { id: "M86", stage: "Round of 32", date: "07/04/2026", time: "03:30", slotA: 55, slotB: 56 },
+  { id: "M84", stage: "Round of 32", date: "07/03/2026", time: "00:30", slotA: 11, slotB: 12 },
+  { id: "M88", stage: "Round of 32", date: "07/03/2026", time: "23:30", slotA: 57, slotB: 58 },
+  { id: "M81", stage: "Round of 32", date: "07/02/2026", time: "05:30", slotA: 13, slotB: 14 },
+  { id: "M85", stage: "Round of 32", date: "07/03/2026", time: "08:30", slotA: 59, slotB: 60 },
+  { id: "M82", stage: "Round of 32", date: "07/02/2026", time: "01:30", slotA: 15, slotB: 16 },
+  { id: "M87", stage: "Round of 32", date: "07/04/2026", time: "07:00", slotA: 61, slotB: 62 },
+  { id: "M89", stage: "Round of 16", date: "07/05/2026", time: "02:30", slotA: 17, slotB: 18 },
+  { id: "M90", stage: "Round of 16", date: "07/04/2026", time: "22:30", slotA: 19, slotB: 20 },
+  { id: "M93", stage: "Round of 16", date: "07/07/2026", time: "00:30", slotA: 21, slotB: 22 },
+  { id: "M94", stage: "Round of 16", date: "07/07/2026", time: "05:30", slotA: 23, slotB: 24 },
+  { id: "M91", stage: "Round of 16", date: "07/06/2026", time: "01:30", slotA: 39, slotB: 40 },
+  { id: "M92", stage: "Round of 16", date: "07/06/2026", time: "05:30", slotA: 41, slotB: 42 },
+  { id: "M95", stage: "Round of 16", date: "07/07/2026", time: "21:30", slotA: 43, slotB: 44 },
+  { id: "M96", stage: "Round of 16", date: "07/08/2026", time: "01:30", slotA: 45, slotB: 46 },
+  { id: "M97", stage: "Quarter-final", date: "07/10/2026", time: "01:30", slotA: 25, slotB: 26 },
+  { id: "M98", stage: "Quarter-final", date: "07/11/2026", time: "00:30", slotA: 27, slotB: 28 },
+  { id: "M99", stage: "Quarter-final", date: "07/12/2026", time: "02:30", slotA: 35, slotB: 36 },
+  { id: "M100", stage: "Quarter-final", date: "07/12/2026", time: "06:30", slotA: 37, slotB: 38 },
+  { id: "M101", stage: "Semi-final", date: "07/15/2026", time: "00:30", slotA: 29, slotB: 30 },
+  { id: "M102", stage: "Semi-final", date: "07/16/2026", time: "00:30", slotA: 33, slotB: 34 },
+  { id: "M103", stage: "Third-place Play-off", date: "07/19/2026", time: "02:30", slotA: 63, slotB: 64 },
+  { id: "M104", stage: "Final", date: "07/20/2026", time: "00:30", slotA: 31, slotB: 32 },
 ];
 
-const cols = ["P", "W", "D", "L", "GF", "GA", "GD", "Pts", "Form"];
+function parseFixtureDateTime(dateText: string, timeText: string): number {
+  const [month, day, year] = dateText.split("/").map((value) => Number(value));
+  const [hour, minute] = timeText.split(":").map((value) => Number(value));
+  if (!month || !day || !year) return Number.MAX_SAFE_INTEGER;
+  return Date.UTC(year, month - 1, day, hour || 0, minute || 0);
+}
 
-export default function FifaWorldCupPage() {
+function formatDayHeading(dateText: string): string {
+  const [month, day, year] = dateText.split("/").map((value) => Number(value));
+  if (!month || !day || !year) return dateText;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function stageClassName(stage: string): string {
+  const slug = stage
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return `fifa-schedule-stage-badge fifa-schedule-stage-${slug}`;
+}
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function FifaWorldCupPage() {
+  const settings = await getSiteSettings();
+  const bracket = getScheduleBracketSettings(settings);
+  const slotMap = new Map(bracket.slots.map((slot) => [slot.id, slot]));
+
+  const sortedFixtures = [...FIXTURES].sort(
+    (a, b) => parseFixtureDateTime(a.date, a.time) - parseFixtureDateTime(b.date, b.time),
+  );
+
+  const grouped = new Map<string, Fixture[]>();
+  for (const fixture of sortedFixtures) {
+    if (!grouped.has(fixture.date)) grouped.set(fixture.date, []);
+    grouped.get(fixture.date)?.push(fixture);
+  }
+
   return (
-    <main className="football-page wc-dark">
-      <section className="football-head">
-        <p className="blog-sub">FIFA World Cup</p>
-        <h1 className="blog-title">FIFA World Cup 2026™</h1>
-        <p className="football-subtitle">11 June – 19 July 2026</p>
-      </section>
+    <main className="football-page wc-dark fifa-world-page">
+      <aside className="fifa-world-side fifa-world-side-left">
+        <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+        <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+        <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+        <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+        <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+        <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+      </aside>
 
-      <section className="football-results wc-standings-wrap" style={{ marginTop: 20 }}>
-        <h2 className="football-section-title">Standings</h2>
+      <div className="fifa-world-main">
+        <section className="football-head">
+          <p className="blog-sub">FIFA World Cup</p>
+          <h1 className="blog-title">FIFA World Cup 2026</h1>
+          <p className="football-subtitle">11 June - 19 July 2026</p>
+        </section>
 
-        <div style={styles.grid}>
-          {groups.map((group) => (
-            <div key={group.name} style={styles.card}>
-              <table style={styles.table}>
-                <thead>
-                  <tr style={styles.headRow}>
-                    <th style={{ ...styles.th, ...styles.teamCol, textAlign: "left" }}>
-                      {group.name}
-                    </th>
-                    {cols.map((col) => (
-                      <th
-                        key={col}
-                        style={{
-                          ...styles.th,
-                          ...(col === "Form" ? styles.formCol : styles.statCol),
-                        }}
-                      >
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {group.teams.map((team, index) => (
-                    <tr key={team.name} style={styles.bodyRow}>
-                      <td style={{ ...styles.td, ...styles.teamCell }}>
-                        <span style={styles.rank}>{index + 1}</span>
-                        <img
-                          src={`https://flagcdn.com/w20/${team.flag}.png`}
-                          srcSet={`https://flagcdn.com/w40/${team.flag}.png 2x`}
-                          width={20}
-                          height={13}
-                          alt={team.name}
-                          style={styles.flag}
-                        />
-                        <span style={styles.teamName}>{team.name}</span>
-                      </td>
-                      <td style={styles.td}>0</td>
-                      <td style={styles.td}>0</td>
-                      <td style={styles.td}>0</td>
-                      <td style={styles.td}>0</td>
-                      <td style={styles.td}>0</td>
-                      <td style={styles.td}>0</td>
-                      <td style={styles.td}>0</td>
-                      <td style={{ ...styles.td, ...styles.pts }}>0</td>
-                      <td style={{ ...styles.td, ...styles.formCell }}>- - - - -</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
-        </div>
-      </section>
+        <section className="football-results fifa-schedule-wrap" style={{ marginTop: 20 }}>
+          <div className="fifa-schedule-top">
+            <h2 className="football-section-title">Schedule</h2>
+            <span className="fifa-schedule-tz">All kickoff times UTC</span>
+          </div>
+
+          <div className="fifa-schedule-days">
+            {Array.from(grouped.entries()).map(([dateKey, fixtures]) => (
+              <section key={dateKey} className="fifa-schedule-day">
+                <header className="fifa-schedule-day-head">
+                  <h3 className="fifa-schedule-day-title">{formatDayHeading(dateKey)}</h3>
+                  <span className="fifa-schedule-day-count">
+                    {fixtures.length} match{fixtures.length > 1 ? "es" : ""}
+                  </span>
+                </header>
+
+                <div className="fifa-schedule-list">
+                  {fixtures.map((fixture) => {
+                    const teamA = slotMap.get(fixture.slotA);
+                    const teamB = slotMap.get(fixture.slotB);
+                    return (
+                      <article key={fixture.id} className="fifa-schedule-card">
+                        <div className="fifa-schedule-meta">
+                          <span className={stageClassName(fixture.stage)}>{fixture.stage}</span>
+                          <span className="fifa-schedule-id">{fixture.id}</span>
+                        </div>
+
+                        <div className="fifa-schedule-match-row">
+                          <div className="fifa-schedule-team fifa-schedule-team-left">
+                            {teamA?.flagImageUrl ? (
+                              <img
+                                src={teamA.flagImageUrl}
+                                alt={`${teamA.name} flag`}
+                                className="fifa-schedule-flag"
+                              />
+                            ) : (
+                              <span className="fifa-schedule-flag fifa-schedule-flag-empty" aria-hidden="true" />
+                            )}
+                            <span className="fifa-schedule-name">{teamA?.name || teamA?.code || "TBD"}</span>
+                          </div>
+
+                          <div className="fifa-schedule-vs">vs</div>
+
+                          <div className="fifa-schedule-kickoff" aria-label={`Kickoff at ${fixture.time} UTC`}>
+                            <span className="fifa-schedule-time">{fixture.time}</span>
+                            <small>UTC</small>
+                          </div>
+
+                          <div className="fifa-schedule-team fifa-schedule-team-right">
+                            <span className="fifa-schedule-name">{teamB?.name || teamB?.code || "TBD"}</span>
+                            {teamB?.flagImageUrl ? (
+                              <img
+                                src={teamB.flagImageUrl}
+                                alt={`${teamB.name} flag`}
+                                className="fifa-schedule-flag"
+                              />
+                            ) : (
+                              <span className="fifa-schedule-flag fifa-schedule-flag-empty" aria-hidden="true" />
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <aside className="fifa-world-side fifa-world-side-right">
+        <AutoStackedAdSideRail
+          size="160x300"
+          smartLinkLabel="Partner"
+          targetSelector=".fifa-world-main"
+          minSlots={1}
+          maxSlots={10}
+        />
+        <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+      </aside>
     </main>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    gap: 18,
-  },
-  card: {
-    border: "1px solid #2a313d",
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: "#0f1218",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    tableLayout: "fixed",
-    fontSize: 13,
-  },
-  headRow: {
-    borderBottom: "1px solid #2a313d",
-    backgroundColor: "#141922",
-  },
-  bodyRow: {
-    borderBottom: "1px solid #1f2530",
-  },
-  th: {
-    padding: "9px 4px",
-    fontWeight: 500,
-    fontSize: 11,
-    color: "#8e9aaf",
-    textAlign: "center",
-    whiteSpace: "nowrap",
-  },
-  teamCol: {
-    width: "42%",
-    paddingLeft: 12,
-    fontSize: 12,
-    color: "#e6eaf0",
-  },
-  statCol: {
-    width: "5.5%",
-  },
-  formCol: {
-    width: "13%",
-  },
-  td: {
-    padding: "7px 4px",
-    textAlign: "center",
-    fontSize: 12,
-    color: "#a9b3c4",
-    verticalAlign: "middle",
-  },
-  teamCell: {
-    textAlign: "left",
-    paddingLeft: 12,
-    paddingRight: 8,
-  },
-  teamName: {
-    color: "#e6eaf0",
-    fontSize: 12,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  },
-  rank: {
-    display: "inline-block",
-    width: 14,
-    fontSize: 11,
-    color: "#8e9aaf",
-    marginRight: 4,
-    flexShrink: 0,
-  },
-  flag: {
-    display: "inline-block",
-    verticalAlign: "middle",
-    marginRight: 6,
-    borderRadius: 2,
-    objectFit: "cover",
-    flexShrink: 0,
-  },
-  pts: {
-    fontWeight: 600,
-    color: "#ffffff",
-  },
-  formCell: {
-    color: "#8e9aaf",
-    letterSpacing: "0.05em",
-    fontSize: 11,
-  },
-};

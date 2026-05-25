@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminAuth } from "@/lib/adminAuth";
 import { createUserProfile, isValidUsername, updateAdminUserById } from "@/lib/users";
 import { getMongoDb } from "@/lib/mongodb";
+import { enforceSameOrigin, isValidEmail } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -70,6 +71,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const admin = await ensureAdmin();
   if (!admin.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -90,6 +94,14 @@ export async function POST(req: Request) {
 
   if (!isValidUsername(username)) {
     return NextResponse.json({ error: "Invalid username" }, { status: 400 });
+  }
+
+  if (!isValidEmail(email)) {
+    return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+  }
+
+  if (password && password.length < 8) {
+    return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
   }
 
   try {
@@ -113,6 +125,9 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const admin = await ensureAdmin();
   if (!admin.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -129,6 +144,12 @@ export async function PUT(req: Request) {
 
   if (typeof body.username === "string" && !isValidUsername(body.username)) {
     return NextResponse.json({ error: "Invalid username" }, { status: 400 });
+  }
+  if (typeof body.email === "string" && body.email.trim() && !isValidEmail(body.email)) {
+    return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+  }
+  if (typeof body.password === "string" && body.password && body.password.length < 8) {
+    return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
   }
 
   try {
@@ -154,6 +175,9 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const admin = await ensureAdmin();
   if (!admin.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

@@ -13,7 +13,8 @@ const menuLinks = [
   { href: "/", label: "Home" },
   { href: "/posts", label: "Posts" },
   { href: "/teams", label: "Teams" },
-  { href: "/fifa-world-cup", label: "FIFA World Cup" },
+  { href: "/fifa-game", label: "FIFA Game" },
+  { href: "/fifa-world-cup", label: "FIFA" },
   { href: "/live", label: "Live" },
   { href: "/rankings", label: "Rankings" },
   { href: "/football", label: "Live Data" },
@@ -97,12 +98,12 @@ export default function NavbarClient({ loggedIn }: NavbarClientProps) {
           </div>
 
           <div className="nav-actions">
-            <button className="nav-search" aria-label="Search">
+            <Link href="/search" className="nav-search" aria-label="Search">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
-            </button>
+            </Link>
 
             <div className="nav-account" ref={accountMenuRef}>
               <button
@@ -141,8 +142,8 @@ export default function NavbarClient({ loggedIn }: NavbarClientProps) {
               )}
             </div>
 
-            <Link href="#" className="nav-subscribe">
-              <div className="pulse"></div> Subscribe
+            <Link href="/live" className="nav-subscribe">
+              <div className="pulse"></div> Watch Live
             </Link>
           </div>
         </div>

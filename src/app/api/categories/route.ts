@@ -10,6 +10,7 @@ import {
   updateCategory,
 } from "@/lib/categories";
 import { slugify } from "@/lib/utils";
+import { enforceSameOrigin } from "@/lib/security";
 
 function resolveSlug(inputSlug: string | undefined, name: string) {
   const normalized = slugify((inputSlug || "").trim());
@@ -41,6 +42,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const admin = await requireAdminAuth();
   if (!admin.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -54,9 +58,11 @@ export async function POST(req: Request) {
     seo_keywords,
   } = body;
 
-  if (!name) return NextResponse.json({ error: "Name required" }, { status: 400 });
+  const safeName = typeof name === "string" ? name.trim().slice(0, 120) : "";
+  const safeDescription = typeof description === "string" ? description.trim().slice(0, 1200) : "";
+  if (!safeName) return NextResponse.json({ error: "Name required" }, { status: 400 });
 
-  const slug = resolveSlug(customSlug, name);
+  const slug = resolveSlug(customSlug, safeName);
   if (!slug) return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
 
   const exists = await categorySlugExists(slug);
@@ -65,9 +71,9 @@ export async function POST(req: Request) {
   }
 
   const category = await createCategory({
-    name,
+    name: safeName,
     slug,
-    description,
+    description: safeDescription,
     image_url,
     seo_description,
     seo_keywords,
@@ -77,6 +83,9 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const admin = await requireAdminAuth();
   if (!admin.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -94,9 +103,11 @@ export async function PUT(req: Request) {
     seo_keywords,
   } = body;
 
-  if (!name) return NextResponse.json({ error: "Name required" }, { status: 400 });
+  const safeName = typeof name === "string" ? name.trim().slice(0, 120) : "";
+  const safeDescription = typeof description === "string" ? description.trim().slice(0, 1200) : "";
+  if (!safeName) return NextResponse.json({ error: "Name required" }, { status: 400 });
 
-  const slug = resolveSlug(customSlug, name);
+  const slug = resolveSlug(customSlug, safeName);
   if (!slug) return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
 
   const exists = await categorySlugExists(slug, id);
@@ -105,9 +116,9 @@ export async function PUT(req: Request) {
   }
 
   const category = await updateCategory(id, {
-    name,
+    name: safeName,
     slug,
-    description,
+    description: safeDescription,
     image_url,
     seo_description,
     seo_keywords,
@@ -121,6 +132,9 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const admin = await requireAdminAuth();
   if (!admin.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

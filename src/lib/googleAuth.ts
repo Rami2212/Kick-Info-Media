@@ -13,13 +13,10 @@ const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
 const authSecret =
   process.env.AUTH_SECRET ||
   process.env.NEXTAUTH_SECRET ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
   "";
 
 if (process.env.NODE_ENV === "production" && !authSecret) {
-  console.error(
-    "[auth] Missing secret. Set AUTH_SECRET or NEXTAUTH_SECRET in production.",
-  );
+  throw new Error("[auth] Missing secret. Set AUTH_SECRET or NEXTAUTH_SECRET in production.");
 }
 
 const authConfig: NextAuthConfig = {

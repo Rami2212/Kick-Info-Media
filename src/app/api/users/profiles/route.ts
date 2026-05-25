@@ -1,9 +1,21 @@
 import { NextResponse } from "next/server";
 import { getMongoDb } from "@/lib/mongodb";
+import { checkRateLimit, enforceSameOrigin } from "@/lib/security";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
+  const rateLimit = checkRateLimit(req, "profiles-batch", 40, 60 * 1000);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many profile lookups. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
+    );
+  }
+
   try {
     const body = (await req.json().catch(() => ({}))) as { usernames?: unknown };
     const input = Array.isArray(body.usernames) ? body.usernames : [];

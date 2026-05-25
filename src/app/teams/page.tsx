@@ -1,66 +1,97 @@
-import { listBlogPosts } from "@/lib/blogPosts";
-import { listCategories } from "@/lib/categories";
-import BlogCard from "../components/BlogCard";
+import Image from "next/image";
+import Link from "next/link";
+import { listTeams, teamCountryToSlug } from "@/lib/teams";
+import { TEAM_GROUPS } from "@/lib/teamGroups";
+import { AdSideRail, AutoStackedAdSideRail } from "@/app/components/ads/Ads";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function TeamsPage() {
-  const [categories, allPosts] = await Promise.all([
-    listCategories(),
-    listBlogPosts({ publishedOnly: true }),
-  ]);
+  const teams = await listTeams({ publishedOnly: true });
+  const teamsByGroup = new Map<string, typeof teams>();
 
-  const categoryMap = new Map(categories.map((cat) => [cat.id, cat]));
-  const teamsCategory =
-    categories.find((cat) => cat.slug.trim().toLowerCase() === "teams") ||
-    categories.find((cat) => cat.name.trim().toLowerCase() === "teams") ||
-    null;
-
-  const teamPosts = teamsCategory
-    ? allPosts.filter((post) => post.category_id === teamsCategory.id)
-    : [];
+  for (const group of TEAM_GROUPS) {
+    teamsByGroup.set(group, teams.filter((team) => team.group === group).slice(0, 4));
+  }
 
   return (
     <>
       <div className="divider"></div>
-      <section className="posts-page">
-        <aside className="posts-filter-sidebar">
-          <div className="posts-filter-box posts-filter-box-blank" aria-hidden="true"></div>
+      <section className="teams-layout">
+        <aside className="teams-layout-side teams-layout-side-left">
+          <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
         </aside>
 
-        <div className="posts-main">
+        <div className="teams-layout-main">
           <header className="posts-head">
             <div>
-              <p className="blog-sub">Editorial Feed</p>
+              <p className="blog-sub">National Squads</p>
               <h1 className="blog-title">Teams</h1>
             </div>
           </header>
 
-          {teamPosts.length > 0 ? (
-            <div className="blog-grid">
-              {teamPosts.map((post, index) => (
-                <BlogCard
-                  key={post.id}
-                  slug={post.slug}
-                  title={post.title}
-                  excerpt={post.excerpt}
-                  coverImageUrl={post.cover_image_url}
-                  categoryName={categoryMap.get(post.category_id)?.name}
-                  published={post.published}
-                  createdAt={post.created_at}
-                  accentColor={index % 2 !== 0 ? "green" : "blue"}
-                />
-              ))}
+          {teams.length > 0 ? (
+            <div className="teams-groups-wrap">
+              {TEAM_GROUPS.map((group) => {
+                const groupTeams = teamsByGroup.get(group) || [];
+                return (
+                  <section key={group} className="teams-group-section">
+                    <div className="section-head">
+                      <span className="section-label">{group}</span>
+                      <div className="section-line"></div>
+                    </div>
+
+                    {groupTeams.length > 0 ? (
+                      <div className="teams-group-grid">
+                        {groupTeams.map((team) => (
+                          <Link key={team.id} href={`/teams/${teamCountryToSlug(team.country)}`} className="team-card-link">
+                            <article className="team-card">
+                              {/^https?:\/\//i.test(team.cover_image_url || team.team_image_url) ? (
+                                <Image
+                                  src={team.cover_image_url || team.team_image_url}
+                                  alt={team.country}
+                                  width={640}
+                                  height={360}
+                                  className="team-card-image"
+                                />
+                              ) : (
+                                <div className="team-card-image team-card-image-placeholder">No Image</div>
+                              )}
+                              <div className="team-card-body">
+                                <h2 className="team-card-name">{team.country}</h2>
+                              </div>
+                            </article>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="admin-panel">
+                        <p className="empty-state-desc">No teams in this group yet.</p>
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
             </div>
           ) : (
             <div className="admin-panel">
               <p className="empty-state-desc">
-                {teamsCategory ? "No team posts found yet." : "Teams category not found yet."}
+                No teams published yet.
               </p>
             </div>
           )}
         </div>
+
+        <aside className="teams-layout-side teams-layout-side-right">
+          <AutoStackedAdSideRail
+            size="160x300"
+            smartLinkLabel="Partner"
+            targetSelector=".teams-layout-main"
+            minSlots={1}
+            maxSlots={10}
+          />
+        </aside>
       </section>
     </>
   );

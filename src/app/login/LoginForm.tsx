@@ -9,6 +9,13 @@ type LoginFormProps = {
   googleEnabled: boolean;
 };
 
+function sanitizeCallbackUrl(input: string | null): string {
+  if (!input) return "/profile";
+  if (!input.startsWith("/")) return "/profile";
+  if (input.startsWith("//")) return "/profile";
+  return input;
+}
+
 export default function LoginForm({ googleEnabled }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -19,6 +26,7 @@ export default function LoginForm({ googleEnabled }: LoginFormProps) {
   const [error, setError] = useState("");
 
   const authErrorCode = searchParams.get("error");
+  const callbackUrl = sanitizeCallbackUrl(searchParams.get("callbackUrl"));
   const authErrorMessage =
     authErrorCode === "Configuration"
       ? "Login is not configured on server yet. Add AUTH_SECRET (or NEXTAUTH_SECRET), NEXTAUTH_URL/AUTH_URL, and redeploy."
@@ -36,7 +44,7 @@ export default function LoginForm({ googleEnabled }: LoginFormProps) {
         email: email.trim().toLowerCase(),
         password,
         redirect: false,
-        callbackUrl: "/profile",
+        callbackUrl,
       });
 
       if (result?.error) {
@@ -44,7 +52,7 @@ export default function LoginForm({ googleEnabled }: LoginFormProps) {
         return;
       }
 
-      router.push(result?.url || "/profile");
+      router.push(result?.url || callbackUrl);
       router.refresh();
     } catch {
       setError("Login failed. Please try again.");
@@ -57,7 +65,7 @@ export default function LoginForm({ googleEnabled }: LoginFormProps) {
     setGoogleLoading(true);
     setError("");
     try {
-      await signIn("google", { callbackUrl: "/profile" });
+      await signIn("google", { callbackUrl });
     } catch {
       setError("Google login failed. Please try again.");
       setGoogleLoading(false);

@@ -1,9 +1,10 @@
-import { getBlogPostBySlug, listBlogPosts } from "@/lib/blogPosts";
-import { getCategoryById } from "@/lib/categories";
-import SidebarBlock from "../../components/SidebarBlock";
-import { notFound } from "next/navigation";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { getBlogPostBySlug } from "@/lib/blogPosts";
+import { getCategoryById } from "@/lib/categories";
+import { AdSideRail } from "@/app/components/ads/Ads";
+import { sanitizeRichHtml } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -15,13 +16,13 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const post = await getBlogPostBySlug(slug, true);
-  
+
   if (!post) {
-    return { title: 'Post Not Found' };
+    return { title: "Post Not Found" };
   }
 
   return {
-    title: `${post.title} — KickInfoMedia`,
+    title: `${post.title} - KickInfoMedia`,
     description: post.seo_description || post.excerpt,
   };
 }
@@ -44,33 +45,28 @@ export default async function PostPage({ params }: Props) {
     }
   }
 
-  // Get trending posts
-  const allPosts = await listBlogPosts({ publishedOnly: true, limit: 10 });
-  const trendingPosts = allPosts.slice(0, 5).map(p => ({
-    slug: p.slug,
-    title: p.title,
-    // Note: To be perfectly accurate we'd map category ID to name here too,
-    // but we can omit for trending sidebar simplicity or fetch it.
-  }));
-
-  const dateStr = new Date(post.created_at).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  const dateStr = new Date(post.created_at).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
   return (
     <>
       <div className="divider"></div>
       <div className="post-page">
+        <aside className="post-page-side post-page-side-left">
+          <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+        </aside>
+
         <article className="post-main">
           <div className="post-breadcrumb">
             <Link href="/">Home</Link>
-            <span>›</span>
+            <span>{">"}</span>
             {categorySlug ? (
               <>
                 <Link href={`/category/${categorySlug}`}>{categoryName}</Link>
-                <span>›</span>
+                <span>{">"}</span>
               </>
             ) : null}
             <span>Article</span>
@@ -82,41 +78,34 @@ export default async function PostPage({ params }: Props) {
             <p className="post-page-excerpt">{post.excerpt}</p>
             <div className="post-meta-bar">
               <span className="author-name">Editorial Team</span>
-              <span>·</span>
+              <span>.</span>
               <span>{dateStr}</span>
-              <span>·</span>
+              <span>.</span>
               <span>{Math.max(1, Math.ceil(post.content.length / 1000))} min read</span>
             </div>
           </header>
 
           {post.cover_image_url && (
-            <img 
-              className="post-cover-img" 
-              src={post.cover_image_url} 
-              alt={post.title} 
-            />
+            <img className="post-cover-img" src={post.cover_image_url} alt={post.title} />
           )}
 
-          <div 
-            className="post-body" 
-            dangerouslySetInnerHTML={{ __html: post.content }} 
-          />
+          <div className="post-body" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(post.content || "") }} />
 
           {post.media && post.media.length > 0 && (
             <div className="post-media">
-              {post.media.map((item, idx) => (
-                item.type === 'video' ? (
+              {post.media.map((item, idx) =>
+                item.type === "video" ? (
                   <video key={idx} src={item.url} controls />
                 ) : (
                   <img key={idx} src={item.url} alt={`Media ${idx + 1}`} />
-                )
-              ))}
+                ),
+              )}
             </div>
           )}
         </article>
 
-        <aside className="sidebar">
-          <SidebarBlock trendingPosts={trendingPosts} />
+        <aside className="post-page-side post-page-side-right">
+          <AdSideRail size="160x600" smartLinkLabel="Partner" />
         </aside>
       </div>
     </>

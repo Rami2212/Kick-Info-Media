@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AdSideRail, AutoStackedAdSideRail } from "@/app/components/ads/Ads";
 
 type EndpointKey =
   | "todayMatches"
@@ -193,11 +194,14 @@ export default function FootballPage() {
   const [error, setError] = useState("");
   const [payload, setPayload] = useState<unknown>(null);
   const [quota, setQuota] = useState<ApiResponse["quota"]>();
+  const [mobileTab, setMobileTab] = useState<"filters" | "data">("filters");
 
   const matches = useMemo(() => mapMatches(payload), [payload]);
   const standings = useMemo(() => mapStandings(payload), [payload]);
   const scorers = useMemo(() => mapScorers(payload), [payload]);
   const teams = useMemo(() => mapTeams(payload), [payload]);
+  const hasPayload = payload !== null && payload !== undefined;
+  const hasLoadedData = matches.length > 0 || standings.length > 0 || scorers.length > 0 || teams.length > 0;
 
   const quotaText = useMemo(() => {
     if (!quota) return "";
@@ -206,13 +210,18 @@ export default function FootballPage() {
       minute: "2-digit",
       second: "2-digit",
     });
-    return `${quota.remaining} calls left this minute · resets at ${resetTime}${quota.cached ? " · cached response" : ""}`;
+    return `${quota.remaining} calls left this minute - resets at ${resetTime}${quota.cached ? " - cached response" : ""}`;
   }, [quota]);
 
   const buildQuery = () => {
     const search = new URLSearchParams({ endpoint });
 
-    if (endpoint === "competitionMatches" || endpoint === "standings" || endpoint === "scorers" || endpoint === "competitionTeams") {
+    if (
+      endpoint === "competitionMatches" ||
+      endpoint === "standings" ||
+      endpoint === "scorers" ||
+      endpoint === "competitionTeams"
+    ) {
       search.set("competition", competition);
     }
     if (endpoint === "teamMatches") {
@@ -224,7 +233,14 @@ export default function FootballPage() {
     if (status && (endpoint === "todayMatches" || endpoint === "competitionMatches" || endpoint === "teamMatches")) {
       search.set("status", status);
     }
-    if (season && (endpoint === "competitionMatches" || endpoint === "standings" || endpoint === "scorers" || endpoint === "competitionTeams" || endpoint === "teamMatches")) {
+    if (
+      season &&
+      (endpoint === "competitionMatches" ||
+        endpoint === "standings" ||
+        endpoint === "scorers" ||
+        endpoint === "competitionTeams" ||
+        endpoint === "teamMatches")
+    ) {
       search.set("season", season);
     }
     if (limit && (endpoint === "scorers" || endpoint === "teamMatches")) {
@@ -247,6 +263,7 @@ export default function FootballPage() {
 
       setPayload(data.data ?? null);
       setQuota(data.quota);
+      setMobileTab("data");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load football data");
     } finally {
@@ -255,202 +272,226 @@ export default function FootballPage() {
   }
 
   return (
-    <main className="football-page">
-      <section className="football-head">
-        <p className="blog-sub">Live API</p>
-        <h1 className="blog-title">Football Data Explorer</h1>
-        <p className="football-subtitle">
-          Pull data from football-data.org v4 with quota-safe caching. You have 10 provider calls per minute.
-        </p>
-      </section>
+    <main className="football-page football-page-shell">
+      <aside className="football-page-side football-page-side-left">
+        <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+      </aside>
 
-      <section className="football-layout">
-        <aside className="football-filters">
-          <div className="football-filter-group">
-            <label className="admin-label" htmlFor="endpoint">Endpoint</label>
-            <select id="endpoint" value={endpoint} onChange={(e) => setEndpoint(e.target.value as EndpointKey)} className="admin-select">
-              <option value="todayMatches">Matches (global)</option>
-              <option value="competitionMatches">Competition Matches</option>
-              <option value="standings">Competition Standings</option>
-              <option value="scorers">Top Scorers</option>
-              <option value="competitionTeams">Competition Teams</option>
-              <option value="teamMatches">Team Matches</option>
-            </select>
-          </div>
+      <section className="football-page-main">
+        <section className="football-head">
+          <p className="blog-sub">Live Data</p>
+          <h1 className="blog-title">Football Data Explorer</h1>
+          <p className="football-subtitle">
+            Pull data from football-data.org v4 with quota-safe caching. You have 10 provider calls per minute.
+          </p>
+        </section>
 
-          {(endpoint === "competitionMatches" || endpoint === "standings" || endpoint === "scorers" || endpoint === "competitionTeams") && (
-            <div className="football-filter-group">
-              <label className="admin-label" htmlFor="competition">Competition</label>
-              <select id="competition" value={competition} onChange={(e) => setCompetition(e.target.value)} className="admin-select">
-                {COMPETITIONS.map((item) => (
-                  <option key={item.code} value={item.code}>
-                    {item.name} ({item.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {endpoint === "teamMatches" && (
-            <div className="football-filter-group">
-              <label className="admin-label" htmlFor="teamId">Team ID</label>
-              <input
-                id="teamId"
-                value={teamId}
-                onChange={(e) => setTeamId(e.target.value)}
-                className="admin-input"
-                placeholder="86"
-              />
-            </div>
-          )}
-
-          <div className="football-filter-row">
-            <div className="football-filter-group">
-              <label className="admin-label" htmlFor="dateFrom">Date From</label>
-              <input id="dateFrom" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="admin-input" />
-            </div>
-            <div className="football-filter-group">
-              <label className="admin-label" htmlFor="dateTo">Date To</label>
-              <input id="dateTo" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="admin-input" />
-            </div>
-          </div>
-
-          {(endpoint === "todayMatches" || endpoint === "competitionMatches" || endpoint === "teamMatches") && (
-            <div className="football-filter-group">
-              <label className="admin-label" htmlFor="status">Status</label>
-              <select id="status" value={status} onChange={(e) => setStatus(e.target.value)} className="admin-select">
-                {STATUS_FILTERS.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {(endpoint === "competitionMatches" || endpoint === "standings" || endpoint === "scorers" || endpoint === "competitionTeams" || endpoint === "teamMatches") && (
-            <div className="football-filter-group">
-              <label className="admin-label" htmlFor="season">Season</label>
-              <input id="season" value={season} onChange={(e) => setSeason(e.target.value)} className="admin-input" placeholder="2025" />
-            </div>
-          )}
-
-          {(endpoint === "scorers" || endpoint === "teamMatches") && (
-            <div className="football-filter-group">
-              <label className="admin-label" htmlFor="limit">Limit</label>
-              <input id="limit" value={limit} onChange={(e) => setLimit(e.target.value)} className="admin-input" placeholder="10" />
-            </div>
-          )}
-
-          <button type="button" onClick={loadData} disabled={loading} className="admin-button admin-button-blue w-full">
-            {loading ? "Loading..." : "Load Data"}
+        <div className="football-mobile-tabs" role="tablist" aria-label="Data explorer panels">
+          <button
+            type="button"
+            className={`football-mobile-tab${mobileTab === "filters" ? " active" : ""}`}
+            onClick={() => setMobileTab("filters")}
+            aria-selected={mobileTab === "filters"}
+          >
+            Filters
           </button>
-          {quotaText && <p className="football-quota">{quotaText}</p>}
-          {error && <p className="football-error">{error}</p>}
-        </aside>
+          <button
+            type="button"
+            className={`football-mobile-tab${mobileTab === "data" ? " active" : ""}`}
+            onClick={() => setMobileTab("data")}
+            aria-selected={mobileTab === "data"}
+          >
+            Loaded Data
+          </button>
+        </div>
 
-        <section className="football-results">
-          {!payload && !loading && <p className="empty-state-desc">Pick filters and load data.</p>}
+        <section className="football-layout">
+          <aside className={`football-filters${mobileTab === "data" ? " football-mobile-hidden" : ""}`}>
+            <div className="football-filter-group">
+              <label className="admin-label" htmlFor="endpoint">Endpoint</label>
+              <select id="endpoint" value={endpoint} onChange={(e) => setEndpoint(e.target.value as EndpointKey)} className="admin-select">
+                <option value="todayMatches">Matches (global)</option>
+                <option value="competitionMatches">Competition Matches</option>
+                <option value="standings">Competition Standings</option>
+                <option value="scorers">Top Scorers</option>
+                <option value="competitionTeams">Competition Teams</option>
+                <option value="teamMatches">Team Matches</option>
+              </select>
+            </div>
 
-          {matches.length > 0 && (
-            <div className="football-table-wrap">
-              <table className="football-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Match</th>
-                    <th>Score</th>
-                    <th>Status</th>
-                    <th>Comp</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {matches.map((item) => (
-                    <tr key={item.id}>
-                      <td>{formatUtcDate(item.utcDate)}</td>
-                      <td>{item.home} vs {item.away}</td>
-                      <td>{item.score}</td>
-                      <td>{item.status}</td>
-                      <td>{item.competition}</td>
-                    </tr>
+            {(endpoint === "competitionMatches" || endpoint === "standings" || endpoint === "scorers" || endpoint === "competitionTeams") && (
+              <div className="football-filter-group">
+                <label className="admin-label" htmlFor="competition">Competition</label>
+                <select id="competition" value={competition} onChange={(e) => setCompetition(e.target.value)} className="admin-select">
+                  {COMPETITIONS.map((item) => (
+                    <option key={item.code} value={item.code}>
+                      {item.name} ({item.code})
+                    </option>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                </select>
+              </div>
+            )}
 
-          {standings.length > 0 && (
-            <div className="football-table-wrap">
-              <table className="football-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Team</th>
-                    <th>P</th>
-                    <th>W</th>
-                    <th>D</th>
-                    <th>L</th>
-                    <th>GF</th>
-                    <th>GA</th>
-                    <th>PTS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {standings.map((item) => (
-                    <tr key={`${item.position}-${item.team}`}>
-                      <td>{item.position}</td>
-                      <td>{item.team}</td>
-                      <td>{item.played}</td>
-                      <td>{item.won}</td>
-                      <td>{item.draw}</td>
-                      <td>{item.lost}</td>
-                      <td>{item.goalsFor}</td>
-                      <td>{item.goalsAgainst}</td>
-                      <td>{item.points}</td>
-                    </tr>
+            {endpoint === "teamMatches" && (
+              <div className="football-filter-group">
+                <label className="admin-label" htmlFor="teamId">Team ID</label>
+                <input id="teamId" value={teamId} onChange={(e) => setTeamId(e.target.value)} className="admin-input" placeholder="86" />
+              </div>
+            )}
+
+            <div className="football-filter-row">
+              <div className="football-filter-group">
+                <label className="admin-label" htmlFor="dateFrom">Date From</label>
+                <input id="dateFrom" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="admin-input" />
+              </div>
+              <div className="football-filter-group">
+                <label className="admin-label" htmlFor="dateTo">Date To</label>
+                <input id="dateTo" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="admin-input" />
+              </div>
+            </div>
+
+            {(endpoint === "todayMatches" || endpoint === "competitionMatches" || endpoint === "teamMatches") && (
+              <div className="football-filter-group">
+                <label className="admin-label" htmlFor="status">Status</label>
+                <select id="status" value={status} onChange={(e) => setStatus(e.target.value)} className="admin-select">
+                  {STATUS_FILTERS.map((item) => (
+                    <option key={item} value={item}>{item}</option>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                </select>
+              </div>
+            )}
 
-          {scorers.length > 0 && (
-            <div className="football-table-wrap">
-              <table className="football-table">
-                <thead>
-                  <tr>
-                    <th>Player</th>
-                    <th>Team</th>
-                    <th>Goals</th>
-                    <th>Assists</th>
-                    <th>Pens</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {scorers.map((item) => (
-                    <tr key={`${item.player}-${item.team}`}>
-                      <td>{item.player}</td>
-                      <td>{item.team}</td>
-                      <td>{item.goals}</td>
-                      <td>{item.assists}</td>
-                      <td>{item.penalties}</td>
+            {(endpoint === "competitionMatches" || endpoint === "standings" || endpoint === "scorers" || endpoint === "competitionTeams" || endpoint === "teamMatches") && (
+              <div className="football-filter-group">
+                <label className="admin-label" htmlFor="season">Season</label>
+                <input id="season" value={season} onChange={(e) => setSeason(e.target.value)} className="admin-input" placeholder="2025" />
+              </div>
+            )}
+
+            {(endpoint === "scorers" || endpoint === "teamMatches") && (
+              <div className="football-filter-group">
+                <label className="admin-label" htmlFor="limit">Limit</label>
+                <input id="limit" value={limit} onChange={(e) => setLimit(e.target.value)} className="admin-input" placeholder="10" />
+              </div>
+            )}
+
+            <button type="button" onClick={loadData} disabled={loading} className="admin-button admin-button-blue w-full">
+              {loading ? "Loading..." : "Load Data"}
+            </button>
+            {quotaText && <p className="football-quota">{quotaText}</p>}
+            {error && <p className="football-error">{error}</p>}
+          </aside>
+
+          <section className={`football-results${mobileTab === "filters" ? " football-mobile-hidden" : ""}`}>
+            {!payload && !loading && <p className="empty-state-desc">Pick filters and load data.</p>}
+            {!hasLoadedData && hasPayload && !loading && <p className="empty-state-desc">No rows returned for current filters.</p>}
+
+            {matches.length > 0 && (
+              <div className="football-table-wrap">
+                <table className="football-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Match</th>
+                      <th>Score</th>
+                      <th>Status</th>
+                      <th>Comp</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {matches.map((item) => (
+                      <tr key={item.id}>
+                        <td>{formatUtcDate(item.utcDate)}</td>
+                        <td>{item.home} vs {item.away}</td>
+                        <td>{item.score}</td>
+                        <td>{item.status}</td>
+                        <td>{item.competition}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-          {teams.length > 0 && (
-            <div className="football-team-grid">
-              {teams.map((item) => (
-                <article key={item.id} className="football-team-card">
-                  <p className="football-team-name">{item.name}</p>
-                  <p className="football-team-meta">ID: {item.id}{item.tla ? ` · ${item.tla}` : ""}</p>
-                </article>
-              ))}
-            </div>
-          )}
+            {standings.length > 0 && (
+              <div className="football-table-wrap">
+                <table className="football-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Team</th>
+                      <th>P</th>
+                      <th>W</th>
+                      <th>D</th>
+                      <th>L</th>
+                      <th>GF</th>
+                      <th>GA</th>
+                      <th>PTS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((item) => (
+                      <tr key={`${item.position}-${item.team}`}>
+                        <td>{item.position}</td>
+                        <td>{item.team}</td>
+                        <td>{item.played}</td>
+                        <td>{item.won}</td>
+                        <td>{item.draw}</td>
+                        <td>{item.lost}</td>
+                        <td>{item.goalsFor}</td>
+                        <td>{item.goalsAgainst}</td>
+                        <td>{item.points}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {scorers.length > 0 && (
+              <div className="football-table-wrap">
+                <table className="football-table">
+                  <thead>
+                    <tr>
+                      <th>Player</th>
+                      <th>Team</th>
+                      <th>Goals</th>
+                      <th>Assists</th>
+                      <th>Pens</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scorers.map((item) => (
+                      <tr key={`${item.player}-${item.team}`}>
+                        <td>{item.player}</td>
+                        <td>{item.team}</td>
+                        <td>{item.goals}</td>
+                        <td>{item.assists}</td>
+                        <td>{item.penalties}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {teams.length > 0 && (
+              <div className="football-team-grid">
+                {teams.map((item) => (
+                  <article key={item.id} className="football-team-card">
+                    <p className="football-team-name">{item.name}</p>
+                    <p className="football-team-meta">ID: {item.id}{item.tla ? ` · ${item.tla}` : ""}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         </section>
       </section>
+
+      <aside className="football-page-side football-page-side-right">
+        <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+      </aside>
     </main>
   );
 }

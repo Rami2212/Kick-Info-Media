@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getNextMatchSettings, getSiteSettings, getWorldCupSettings, incrementWorldCupVote } from "@/lib/siteSettings";
 import { auth } from "@/lib/googleAuth";
+import { checkRateLimit, enforceSameOrigin } from "@/lib/security";
 
 type VotePayload = {
   matchId?: unknown;
@@ -16,6 +17,17 @@ function parsePayload(payload: VotePayload): { matchId: string; side: "a" | "b" 
 }
 
 export async function POST(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
+  const rateLimit = checkRateLimit(req, "world-cup-vote", 20, 60 * 1000);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many votes submitted. Please wait a moment." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
+    );
+  }
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Please login to vote." }, { status: 401 });

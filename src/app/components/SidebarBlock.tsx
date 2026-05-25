@@ -1,6 +1,9 @@
 import Link from "next/link";
+import {CompactAdSlot} from "@/app/components/ads/Ads";
 
 type SidebarBlockProps = {
+  className?: string;
+  showAdSlot?: boolean;
   trendingPosts: Array<{
     slug: string;
     title: string;
@@ -8,9 +11,9 @@ type SidebarBlockProps = {
   }>;
 };
 
-export default function SidebarBlock({ trendingPosts }: SidebarBlockProps) {
+export default function SidebarBlock({ className, showAdSlot = true, trendingPosts }: SidebarBlockProps) {
   return (
-    <>
+    <div className={className}>
       {/* Trending */}
       {trendingPosts && trendingPosts.length > 0 && (
         <div className="sidebar-block">
@@ -30,15 +33,17 @@ export default function SidebarBlock({ trendingPosts }: SidebarBlockProps) {
         </div>
       )}
 
+      {showAdSlot ? <CompactAdSlot size="300x250" /> : null}
+
       {/* Newsletter */}
-      <div className="newsletter">
-        <div className="newsletter-watermark">KIM</div>
-        <p className="newsletter-label">Free Newsletter</p>
-        <h3 className="newsletter-title">The Daily Pulse — 5 min reads, zero fluff</h3>
-        <p className="newsletter-sub">25,000+ readers get our best stories every morning.</p>
-        <input className="nl-input" type="email" placeholder="Your email address" />
-        <button className="nl-btn">Subscribe Free</button>
-      </div>
+      {/*<div className="newsletter">*/}
+      {/*  <div className="newsletter-watermark">KIM</div>*/}
+      {/*  <p className="newsletter-label">Free Newsletter</p>*/}
+      {/*  <h3 className="newsletter-title">The Daily Pulse — 5 min reads, zero fluff</h3>*/}
+      {/*  <p className="newsletter-sub">25,000+ readers get our best stories every morning.</p>*/}
+      {/*  <input className="nl-input" type="email" placeholder="Your email address" />*/}
+      {/*  <button className="nl-btn">Subscribe Free</button>*/}
+      {/*</div>*/}
 
       {/* Poll */}
       {/*<div className="sidebar-block">*/}
@@ -76,6 +81,6 @@ export default function SidebarBlock({ trendingPosts }: SidebarBlockProps) {
       {/*    <p className="poll-total">12,483 votes · Results update live</p>*/}
       {/*  </div>*/}
       {/*</div>*/}
-    </>
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { enforceSameOrigin } from "@/lib/security";
 
 const COOKIE_NAMES = [
   "authjs.session-token",
@@ -11,7 +12,10 @@ const COOKIE_NAMES = [
   "next-auth.callback-url",
 ];
 
-export async function POST() {
+export async function POST(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const res = NextResponse.json({ success: true });
 
   for (const name of COOKIE_NAMES) {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { CompactAdSlot } from "@/app/components/ads/Ads";
 
 type HeroPost = {
   slug: string;
@@ -10,6 +11,7 @@ type HeroPost = {
   coverImageUrl?: string;
   categoryName?: string;
   createdAt: string;
+  href?: string;
 };
 
 type HeroSectionProps = {
@@ -96,6 +98,15 @@ export default function HeroSection({ posts }: HeroSectionProps) {
   );
 
   const hasMultipleSlides = slidePosts.length > 1;
+  const getHeroLinkHref = (post: HeroPost) => {
+    if (post.href && post.href.trim().length > 0) {
+      return post.href;
+    }
+    if (post.slug.startsWith("/") || post.slug.startsWith("http://") || post.slug.startsWith("https://")) {
+      return post.slug;
+    }
+    return `/posts/${post.slug}`;
+  };
 
   function goToPreviousSlide(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -120,7 +131,7 @@ export default function HeroSection({ posts }: HeroSectionProps) {
       </div>
 
       <div className="hero-grid">
-        <Link href={`/posts/${activePost.slug}`} className="hero-main">
+        <Link href={getHeroLinkHref(activePost)} className="hero-main">
           <div
             className="hero-bg"
             style={
@@ -133,7 +144,6 @@ export default function HeroSection({ posts }: HeroSectionProps) {
           ></div>
           <div className="hero-pitch"></div>
           <div className="hero-circle"></div>
-          <div className="hero-num">01</div>
           <div className="hero-accent"></div>
           {hasMultipleSlides && (
             <>
@@ -162,9 +172,7 @@ export default function HeroSection({ posts }: HeroSectionProps) {
             <h1 className="hero-title">{activePost.title}</h1>
             <p className="hero-excerpt">{activePost.excerpt}</p>
             <div className="hero-meta">
-              <span className="hero-meta-author">Editorial Team</span>
-              <span>·</span>
-              <span>{mainDate}</span>
+              <span className="hero-meta-author">{mainDate}</span>
               <span>·</span>
               <span>6 min read</span>
             </div>
@@ -193,7 +201,6 @@ export default function HeroSection({ posts }: HeroSectionProps) {
         <div className="hero-side">
           <Link href="/fifa-world-cup" className="side-card side-countdown-card">
             <div className="side-overlay"></div>
-            <div className="side-num">02</div>
             <div className="side-accent"></div>
             <div className="side-content">
               <p className="side-title">FIFA World Cup 2026 Countdown</p>
@@ -218,12 +225,14 @@ export default function HeroSection({ posts }: HeroSectionProps) {
             </div>
           </Link>
 
-          <div className="side-card side-card-blank" aria-hidden="true">
-            <div className="side-num">03</div>
+          <div className="side-card side-card-blank">
+            <CompactAdSlot size="468x60" />
+            <CompactAdSlot size="468x60" />
           </div>
 
-          <div className="side-card side-card-blank" aria-hidden="true">
-            <div className="side-num">04</div>
+          <div className="side-card side-card-blank">
+            <CompactAdSlot size="468x60" />
+            <CompactAdSlot size="468x60" />
           </div>
         </div>
       </div>

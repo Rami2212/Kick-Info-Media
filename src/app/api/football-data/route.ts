@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { FootballApiError, fetchFootballData } from "@/lib/footballDataApi";
+import { checkRateLimit } from "@/lib/security";
 
 type EndpointKey =
   | "todayMatches"
@@ -42,6 +43,14 @@ function getTeamId(search: URLSearchParams) {
 }
 
 export async function GET(req: Request) {
+  const rateLimit = checkRateLimit(req, "football-data-api", 40, 60 * 1000);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please slow down." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   const endpoint = (searchParams.get("endpoint") || "").trim() as EndpointKey;
 

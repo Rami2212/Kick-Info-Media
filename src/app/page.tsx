@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { listBlogPosts } from "@/lib/blogPosts";
 import { listCategories } from "@/lib/categories";
-import { fetchFootballData } from "@/lib/footballDataApi";
+import { getNextFifa2026MatchFromApiSports } from "@/lib/apiSportsFootball";
 import {
   getHomePostSelections,
   getNextMatchSettings,
   getRankingsSettings,
+  getScheduleGroupStageSettings,
   getSiteSettings,
 } from "@/lib/siteSettings";
 import { auth } from "@/lib/googleAuth";
@@ -15,6 +16,9 @@ import BlogCard from "./components/BlogCard";
 import SidebarBlock from "./components/SidebarBlock";
 import WorldCupBracketGame from "./components/WorldCupBracketGame";
 import RankingsTable from "./components/RankingsTable";
+import HomeGroupAQuickPick from "./components/HomeGroupAQuickPick";
+import { CompactAdSlot } from "./components/ads/Ads";
+import ResponsiveAdSlotsBar from "./components/ads/ResponsiveAdSlotsBar";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,47 +27,6 @@ export const metadata: Metadata = {
   title: "KickInfoMedia - Breaking Football News, Transfers & Analysis",
   description: "The premier destination for breaking football news, tactical analysis, and live coverage from across the globe.",
 };
-
-type FootballMatch = {
-  id?: number;
-  utcDate?: string;
-  status?: string;
-  competition?: { name?: string; code?: string };
-  homeTeam?: { name?: string };
-  awayTeam?: { name?: string };
-};
-
-type FootballMatchesPayload = {
-  matches?: FootballMatch[];
-};
-
-function getNextScheduledMatch(payload: unknown): FootballMatch | null {
-  if (!payload || typeof payload !== "object") return null;
-  const maybeMatches = (payload as FootballMatchesPayload).matches;
-  if (!Array.isArray(maybeMatches) || maybeMatches.length === 0) return null;
-
-  const withDates = maybeMatches.filter((match) => typeof match?.utcDate === "string");
-  if (withDates.length === 0) return maybeMatches[0] || null;
-
-  return [...withDates].sort((a, b) => {
-    const aTime = new Date(a.utcDate || "").getTime();
-    const bTime = new Date(b.utcDate || "").getTime();
-    return aTime - bTime;
-  })[0] || null;
-}
-
-function formatMatchDate(value?: string) {
-  if (!value) return "TBD";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "TBD";
-  return date.toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default async function Home() {
   const session = await auth();
@@ -75,18 +38,41 @@ export default async function Home() {
   const homeSelections = getHomePostSelections(settings);
   const nextMatch = getNextMatchSettings(settings);
   const rankings = getRankingsSettings(settings);
-  let nextLiveMatch: FootballMatch | null = null;
-
-  try {
-    const football = await fetchFootballData({
-      path: "/matches",
-      params: { status: "SCHEDULED" },
-      cacheTtlMs: 120_000,
-    });
-    nextLiveMatch = getNextScheduledMatch(football.payload);
-  } catch {
-    nextLiveMatch = null;
-  }
+  const groupStage = getScheduleGroupStageSettings(settings);
+  const groupA =
+    groupStage.groups.find((group) => group.id.trim().toUpperCase() === "A") || groupStage.groups[0] || null;
+  let apiSportsError = "";
+  const apiSportsNextMatch = await getNextFifa2026MatchFromApiSports().catch((error: unknown) => {
+    if (error instanceof Error) {
+      apiSportsError = error.message;
+    }
+    return null;
+  });
+  const nextMatchCard = apiSportsNextMatch || {
+    title: "FIFA 2026 - Next Match",
+    subtitle: apiSportsError ? `Live API data unavailable (${apiSportsError})` : "Live API data unavailable",
+    home: {
+      name: "Home",
+      flagImageUrl: "",
+      goals: "-",
+    },
+    away: {
+      name: "Away",
+      flagImageUrl: "",
+      goals: "-",
+    },
+    kickoff: "TBD",
+    status: "Unavailable",
+    venue: "TBD",
+    stats: [
+      { label: "Shots on Goal", home: "-", away: "-" },
+      { label: "Total Shots", home: "-", away: "-" },
+      { label: "Ball Possession", home: "-", away: "-" },
+      { label: "Passes %", home: "-", away: "-" },
+      { label: "Corner Kicks", home: "-", away: "-" },
+      { label: "Fouls", home: "-", away: "-" },
+    ],
+  };
 
   const categoryMap = new Map<string, string>();
   for (const cat of categories) {
@@ -124,20 +110,30 @@ export default async function Home() {
     categoryName: categoryMap.get(post.category_id),
   }));
 
-  const matchCompetition = nextLiveMatch?.competition?.name || nextLiveMatch?.competition?.code || "Unknown Competition";
-  const matchCompetitionCode = nextLiveMatch?.competition?.code || "N/A";
-  const matchIdLabel = typeof nextLiveMatch?.id === "number" ? String(nextLiveMatch.id) : "TBD";
-  const matchHome = nextLiveMatch?.homeTeam?.name || "Home Team";
-  const matchAway = nextLiveMatch?.awayTeam?.name || "Away Team";
-  const matchStatus = nextLiveMatch?.status || "SCHEDULED";
-  const matchKickoff = formatMatchDate(nextLiveMatch?.utcDate);
-
   return (
     <main>
       <HeroSection posts={heroPostsData} />
       {/* <CategoryGrid categories={categoryGridData} /> */}
 
-      <section className="home-triple-row">
+      <section className="home-pre-game-row">
+        <div className="home-triple-split">
+          <Link href="/live" className="home-triple-split-live">
+            <p className="home-triple-kicker">Watch Live</p>
+            <h3 className="home-triple-title">Live Match Stream</h3>
+            <p className="home-triple-desc">Jump into the live feed and watch the action in real time.</p>
+            <div className="home-triple-live-row">
+              <span className="home-triple-live-dot"></span>
+              <span className="home-triple-live-text">Live Now</span>
+              <span className="home-triple-live-arrow">-&gt;</span>
+            </div>
+          </Link>
+          <div className="home-triple-split-blank ad-compact-slot">
+            <CompactAdSlot size="300x250" />
+          </div>
+        </div>
+
+        <HomeGroupAQuickPick group={groupA} />
+
         <article className="home-triple-card">
           <p className="home-triple-kicker">Fan Poll</p>
           <h3 className="home-triple-title">
@@ -158,20 +154,69 @@ export default async function Home() {
             compact
           />
         </article>
+      </section>
 
-        <article className="home-triple-card">
-          <p className="home-triple-kicker">Next Match Stat</p>
-          <h3 className="home-triple-title">{matchHome} vs {matchAway}</h3>
-          <p className="home-triple-desc">{matchCompetition}</p>
-          <div className="home-triple-stats">
-            <p className="home-triple-meta"><span>Match ID</span><strong>{matchIdLabel}</strong></p>
-            <p className="home-triple-meta"><span>Code</span><strong>{matchCompetitionCode}</strong></p>
-            <p className="home-triple-meta"><span>Kickoff</span><strong>{matchKickoff}</strong></p>
-            <p className="home-triple-meta"><span>Status</span><strong>{matchStatus}</strong></p>
+      <ResponsiveAdSlotsBar
+        maxSlots={4}
+        adKeys={[
+          "73b06254b42b30e1dada76bc6e9ae0ec",
+          "73b06254b42b30e1dada76bc6e9ae0ec",
+          "73b06254b42b30e1dada76bc6e9ae0ec",
+          "73b06254b42b30e1dada76bc6e9ae0ec",
+        ]}
+      />
+
+      <section className="home-triple-row">
+        <article className="home-triple-card home-next-combined-card">
+          <p className="home-triple-kicker">{nextMatchCard.title}</p>
+          <h3 className="home-triple-title">
+            {nextMatchCard.home.name} vs {nextMatchCard.away.name}
+          </h3>
+          <p className="home-triple-desc">{nextMatchCard.subtitle}</p>
+
+          <div className="home-next-scoreline">
+            <div className="home-next-team">
+              {nextMatchCard.home.flagImageUrl ? (
+                <img
+                  src={nextMatchCard.home.flagImageUrl}
+                  alt={`${nextMatchCard.home.name} flag`}
+                  className="home-next-flag"
+                />
+              ) : null}
+              <span>{nextMatchCard.home.name}</span>
+            </div>
+            <div className="home-next-score">
+              <strong>{nextMatchCard.home.goals}</strong>
+              <span>-</span>
+              <strong>{nextMatchCard.away.goals}</strong>
+            </div>
+            <div className="home-next-team home-next-team-away">
+              {nextMatchCard.away.flagImageUrl ? (
+                <img
+                  src={nextMatchCard.away.flagImageUrl}
+                  alt={`${nextMatchCard.away.name} flag`}
+                  className="home-next-flag"
+                />
+              ) : null}
+              <span>{nextMatchCard.away.name}</span>
+            </div>
           </div>
-          <Link href="/football" className="home-triple-link">
-            View Match Stats -&gt;
-          </Link>
+
+          <div className="home-triple-stats">
+            <p className="home-triple-meta"><span>Kickoff</span><strong>{nextMatchCard.kickoff || "TBD"}</strong></p>
+            <p className="home-triple-meta"><span>Status</span><strong>{nextMatchCard.status || "TBD"}</strong></p>
+            <p className="home-triple-meta"><span>Venue</span><strong>{nextMatchCard.venue || "TBD"}</strong></p>
+          </div>
+
+          <div className="home-next-stat-table">
+            {nextMatchCard.stats.map((row, index) => (
+              <div key={`${row.label}-${index}`} className="home-next-stat-row">
+                <strong>{row.home || "-"}</strong>
+                <span>{row.label}</span>
+                <strong>{row.away || "-"}</strong>
+              </div>
+            ))}
+          </div>
         </article>
 
         <div className="home-triple-split">
@@ -185,7 +230,10 @@ export default async function Home() {
               <span className="home-triple-live-arrow">-&gt;</span>
             </div>
           </Link>
-          <div className="home-triple-split-blank" />
+          <div className="home-triple-split-blank ad-compact-slot">
+            <CompactAdSlot size="468x60" />
+            <CompactAdSlot size="468x60" />
+          </div>
         </div>
       </section>
 
@@ -206,12 +254,23 @@ export default async function Home() {
               Open Rankings Page -&gt;
             </Link>
           </div>
+          <SidebarBlock className="home-mobile-trending" trendingPosts={trendingPosts} />
         </div>
 
         <aside className="sidebar">
           <SidebarBlock trendingPosts={trendingPosts} />
         </aside>
       </section>
+
+      <ResponsiveAdSlotsBar
+          maxSlots={4}
+          adKeys={[
+            "73b06254b42b30e1dada76bc6e9ae0ec",
+            "73b06254b42b30e1dada76bc6e9ae0ec",
+            "73b06254b42b30e1dada76bc6e9ae0ec",
+            "73b06254b42b30e1dada76bc6e9ae0ec",
+          ]}
+      />
 
       <section className="blog">
         <div className="blog-head">

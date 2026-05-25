@@ -187,7 +187,7 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
             <div className="admin-field">
               <label className="admin-label">Title</label>
               <input
-                type="text" 
+                type="text"
                 name="title" 
                 required 
                 value={formData.title} 
@@ -199,7 +199,7 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
             <div className="admin-field">
               <label className="admin-label">Excerpt</label>
               <textarea
-                name="excerpt" 
+                name="excerpt"
                 rows={3}
                 value={formData.excerpt} 
                 onChange={handleChange}
@@ -263,7 +263,7 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
             <div className="admin-field">
               <label className="admin-label">Category</label>
               <select
-                name="category_id" 
+                name="category_id"
                 value={formData.category_id} 
                 onChange={handleChange}
                 className="admin-select"
@@ -278,7 +278,7 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
             <div className="admin-field">
               <label className="admin-label">Cover Image URL</label>
               <input
-                type="text" 
+                type="text"
                 name="cover_image_url" 
                 value={formData.cover_image_url} 
                 onChange={handleChange}
@@ -312,7 +312,7 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
             <div className="admin-field">
               <label className="admin-label">SEO Description</label>
               <textarea
-                name="seo_description" 
+                name="seo_description"
                 rows={3}
                 value={formData.seo_description} 
                 onChange={handleChange}
@@ -336,7 +336,7 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
 
         <div className="admin-form-actions">
           <button
-            type="submit" 
+            type="submit"
             disabled={saving}
             className="admin-button admin-button-blue disabled:opacity-50"
           >

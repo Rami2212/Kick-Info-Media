@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
+import { enforceSameOrigin } from "@/lib/security";
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -14,6 +15,9 @@ const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,8 +26,10 @@ export async function POST(req: Request) {
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
-  const isImage = file.type.startsWith("image/");
-  const isVideo = file.type.startsWith("video/");
+  const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
+  const allowedVideoTypes = new Set(["video/mp4", "video/webm", "video/quicktime"]);
+  const isImage = allowedImageTypes.has(file.type);
+  const isVideo = allowedVideoTypes.has(file.type);
   if (!isImage && !isVideo) {
     return NextResponse.json({ error: "Only image or video uploads are allowed" }, { status: 400 });
   }

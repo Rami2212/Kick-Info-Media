@@ -18,6 +18,24 @@ import {
   parseRankingsJsonText,
   type RankingsData,
 } from "@/lib/rankings";
+import {
+  DEFAULT_NEXT_MATCH_STATS_JSON,
+  getDefaultNextMatchStatsData,
+  parseNextMatchStatsJsonText,
+  type NextMatchStatData,
+} from "@/lib/nextMatchStats";
+import {
+  DEFAULT_SCHEDULE_BRACKET_JSON,
+  getDefaultScheduleBracketData,
+  parseScheduleBracketJsonText,
+  type ScheduleBracketData,
+} from "@/lib/scheduleBracket";
+import {
+  DEFAULT_SCHEDULE_GROUP_STAGE_JSON,
+  getDefaultScheduleGroupStageData,
+  parseScheduleGroupStageJsonText,
+  type ScheduleGroupStageData,
+} from "@/lib/scheduleGroupStage";
 
 export type CoverPageSettings = {
   title: string;
@@ -65,11 +83,32 @@ export type RankingsSettings = RankingsData & {
   rankingsJson: string;
 };
 
+export type LiveStreamSettings = {
+  primaryEmbedCode: string;
+  secondaryEmbedCode: string;
+  primaryStreamUrl: string;
+  secondaryStreamUrl: string;
+};
+
+export type NextMatchStatSettings = NextMatchStatData & {
+  statsJson: string;
+};
+
+export type ScheduleBracketSettings = ScheduleBracketData & {
+  bracketJson: string;
+};
+
+export type ScheduleGroupStageSettings = ScheduleGroupStageData & {
+  groupStageJson: string;
+};
+
 type SiteSettingsDoc = SiteSettings & {
   _id?: unknown;
 };
 
 const SETTINGS_ID = "site_settings";
+const DEFAULT_LIVE_STREAM_URL_PRIMARY = "https://embedsports.me/la-liga/real-madrid-vs-athletic-club-stream-1";
+const DEFAULT_LIVE_STREAM_URL_SECONDARY = "https://embedsports.me/segunda-division/cultural-leonesa-vs-burgos-stream-1";
 
 function collection() {
   return getMongoDb().then((db) => db.collection<SiteSettingsDoc>("site_settings"));
@@ -165,6 +204,79 @@ export function getRankingsSettings(settings: SiteSettings): RankingsSettings {
   return {
     ...data,
     rankingsJson: raw || DEFAULT_RANKINGS_JSON,
+  };
+}
+
+export function getNextMatchStatSettings(settings: SiteSettings): NextMatchStatSettings {
+  const raw = normalizeText(settings.extra.nextMatchStatsJson);
+  const parsed = parseNextMatchStatsJsonText(raw);
+  const data = parsed || getDefaultNextMatchStatsData();
+
+  return {
+    ...data,
+    statsJson: raw || DEFAULT_NEXT_MATCH_STATS_JSON,
+  };
+}
+
+export function getScheduleBracketSettings(settings: SiteSettings): ScheduleBracketSettings {
+  const raw = normalizeText(settings.extra.scheduleBracketJson);
+  const parsed = parseScheduleBracketJsonText(raw);
+  const data = parsed || getDefaultScheduleBracketData();
+
+  return {
+    ...data,
+    bracketJson: raw || DEFAULT_SCHEDULE_BRACKET_JSON,
+  };
+}
+
+export function getScheduleGroupStageSettings(settings: SiteSettings): ScheduleGroupStageSettings {
+  const raw = normalizeText(settings.extra.scheduleGroupStageJson);
+  const parsed = parseScheduleGroupStageJsonText(raw);
+  const data = parsed || getDefaultScheduleGroupStageData();
+
+  return {
+    ...data,
+    groupStageJson: raw || DEFAULT_SCHEDULE_GROUP_STAGE_JSON,
+  };
+}
+
+function normalizeHttpUrl(value: string): string {
+  if (!value) return "";
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
+    }
+  } catch {
+    return "";
+  }
+  return "";
+}
+
+function extractFirstIframeSrc(input: string): string {
+  const match = input.match(/<iframe\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/i);
+  return match ? match[1].trim() : "";
+}
+
+export function getLiveStreamSettings(settings: SiteSettings): LiveStreamSettings {
+  const primaryRaw =
+    normalizeText(settings.extra.liveEmbedCodePrimary) ||
+    normalizeText(settings.extra.liveEmbedCode);
+  const secondaryRaw = normalizeText(settings.extra.liveEmbedCodeSecondary);
+
+  const primaryDirectUrl = normalizeHttpUrl(primaryRaw);
+  const primaryIframeSrc = normalizeHttpUrl(extractFirstIframeSrc(primaryRaw));
+  const secondaryDirectUrl = normalizeHttpUrl(secondaryRaw);
+  const secondaryIframeSrc = normalizeHttpUrl(extractFirstIframeSrc(secondaryRaw));
+
+  const primaryStreamUrl = primaryDirectUrl || primaryIframeSrc || DEFAULT_LIVE_STREAM_URL_PRIMARY;
+  const secondaryStreamUrl = secondaryDirectUrl || secondaryIframeSrc || DEFAULT_LIVE_STREAM_URL_SECONDARY;
+
+  return {
+    primaryEmbedCode: primaryRaw,
+    secondaryEmbedCode: secondaryRaw,
+    primaryStreamUrl,
+    secondaryStreamUrl,
   };
 }
 

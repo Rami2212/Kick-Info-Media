@@ -201,8 +201,7 @@ export default function ProfileForm() {
                 <option value="">Not set</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
-                <option value="couple">Couple</option>
-                <option value="transgender">Transgender</option>
+                <option value="other">Other</option>
               </select>
             </div>
           </div>

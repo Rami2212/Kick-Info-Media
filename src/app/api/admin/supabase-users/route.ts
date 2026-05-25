@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireAdminAuth } from "@/lib/adminAuth";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { enforceSameOrigin, isValidEmail } from "@/lib/security";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const admin = await requireAdminAuth();
   if (!admin.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -21,6 +25,12 @@ export async function POST(req: Request) {
 
   if (!email || !password) {
     return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+  }
+  if (!isValidEmail(email)) {
+    return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+  }
+  if (password.length < 8 || password.length > 128) {
+    return NextResponse.json({ error: "Password must be 8-128 characters long" }, { status: 400 });
   }
 
   try {

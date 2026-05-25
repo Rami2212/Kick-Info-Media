@@ -9,6 +9,7 @@ import {
 } from "@/lib/blogPosts";
 import { NextResponse } from "next/server";
 import { slugify } from "@/lib/utils";
+import { enforceSameOrigin, sanitizeRichHtml } from "@/lib/security";
 
 function resolveSlug(inputSlug: string | undefined, title: string) {
   const normalized = slugify((inputSlug || "").trim());
@@ -20,18 +21,27 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const slug = searchParams.get("slug");
   const all = searchParams.get("all"); // admin only fetches unpublished too
+  const includeUnpublished = !!all;
+
+  if (includeUnpublished) {
+    const admin = await requireAdminAuth();
+    if (!admin.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   if (slug) {
-    const post = await getBlogPostBySlug(slug, !all);
+    const post = await getBlogPostBySlug(slug, !includeUnpublished);
     if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(post);
   }
 
-  const posts = await listBlogPosts({ publishedOnly: !all });
+  const posts = await listBlogPosts({ publishedOnly: !includeUnpublished });
   return NextResponse.json(posts);
 }
 
 export async function POST(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const admin = await requireAdminAuth();
   if (!admin.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -52,11 +62,14 @@ export async function POST(req: Request) {
     meta_keywords,
   } = body;
 
-  if (!title || !content) {
+  const safeTitle = typeof title === "string" ? title.trim().slice(0, 180) : "";
+  const safeExcerpt = typeof excerpt === "string" ? excerpt.trim().slice(0, 1000) : "";
+  const safeContent = typeof content === "string" ? sanitizeRichHtml(content) : "";
+  if (!safeTitle || !safeContent) {
     return NextResponse.json({ error: "Title and content required" }, { status: 400 });
   }
 
-  const slug = resolveSlug(customSlug, title);
+  const slug = resolveSlug(customSlug, safeTitle);
   if (!slug) return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
 
   const exists = await blogSlugExists(slug);
@@ -65,10 +78,10 @@ export async function POST(req: Request) {
   }
 
   const post = await createBlogPost({
-    title,
+    title: safeTitle,
     slug,
-    excerpt,
-    content,
+    excerpt: safeExcerpt,
+    content: safeContent,
     cover_image_url,
     category_id,
     media,
@@ -82,6 +95,9 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const admin = await requireAdminAuth();
   if (!admin.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -106,11 +122,14 @@ export async function PUT(req: Request) {
     meta_keywords,
   } = body;
 
-  if (!title || !content) {
+  const safeTitle = typeof title === "string" ? title.trim().slice(0, 180) : "";
+  const safeExcerpt = typeof excerpt === "string" ? excerpt.trim().slice(0, 1000) : "";
+  const safeContent = typeof content === "string" ? sanitizeRichHtml(content) : "";
+  if (!safeTitle || !safeContent) {
     return NextResponse.json({ error: "Title and content required" }, { status: 400 });
   }
 
-  const slug = resolveSlug(customSlug, title);
+  const slug = resolveSlug(customSlug, safeTitle);
   if (!slug) return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
 
   const exists = await blogSlugExists(slug, id);
@@ -119,10 +138,10 @@ export async function PUT(req: Request) {
   }
 
   const post = await updateBlogPost(id, {
-    title,
+    title: safeTitle,
     slug,
-    excerpt,
-    content,
+    excerpt: safeExcerpt,
+    content: safeContent,
     cover_image_url,
     category_id,
     media,
@@ -140,6 +159,9 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const admin = await requireAdminAuth();
   if (!admin.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

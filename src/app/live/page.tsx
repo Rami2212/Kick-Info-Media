@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getLiveStreamSettings, getSiteSettings } from "@/lib/siteSettings";
+import { AdSideRail } from "@/app/components/ads/Ads";
 
 export const metadata: Metadata = {
   title: "Live Match | KickInfoMedia",
@@ -8,37 +10,63 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const streamUrl = "https://embedsports.me/la-liga/real-madrid-vs-athletic-club-stream-1";
+export default async function LivePage() {
+  const settings = await getSiteSettings();
+  const liveStream = getLiveStreamSettings(settings);
 
-export default function LivePage() {
   return (
-    <main className="live-page">
-      <section className="live-head">
-        <p className="blog-sub">Live</p>
-        <h1 className="blog-title">Live Match</h1>
-      </section>
+    <main className="live-page live-shell">
+      <aside className="live-page-side">
+        <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+        <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+      </aside>
 
-      <section className="live-embed-wrap">
-        <div className="live-grid">
-          {Array.from({ length: 9 }).map((_, index) => (
-            <article key={`stream-${index + 1}`} className="live-grid-card">
-              <p className="live-grid-label">Stream {index + 1}</p>
-              <div className="live-embed-frame">
-                <iframe
-                  src={streamUrl}
-                  width="100%"
-                  height="100%"
-                  scrolling="no"
-                  frameBorder="0"
-                  allowFullScreen
-                  referrerPolicy="unsafe-url"
-                  title={`Live stream ${index + 1}`}
-                />
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+      <div className="live-main">
+        <section className="live-head">
+          <p className="blog-sub">Live</p>
+          <h1 className="blog-title">Live Match</h1>
+        </section>
+
+        <section className="live-embed-wrap">
+          <article className="live-grid-card">
+            <p className="live-grid-label">Live Stream 1</p>
+            <div className="live-embed-frame">
+              <iframe
+                src={liveStream.primaryStreamUrl}
+                width="100%"
+                height="100%"
+                scrolling="no"
+                frameBorder="0"
+                allowFullScreen
+                referrerPolicy="unsafe-url"
+                title="Live stream 1"
+              />
+            </div>
+          </article>
+
+          <article className="live-grid-card">
+            <p className="live-grid-label">Live Stream 2</p>
+            <div className="live-embed-frame">
+              <iframe
+                src={liveStream.secondaryStreamUrl}
+                width="100%"
+                height="100%"
+                scrolling="no"
+                frameBorder="0"
+                allowFullScreen
+                referrerPolicy="unsafe-url"
+                title="Live stream 2"
+              />
+            </div>
+          </article>
+        </section>
+      </div>
+
+      <aside className="live-page-side">
+        <AdSideRail size="160x300" smartLinkLabel="Partner" />
+        <AdSideRail size="160x300" smartLinkLabel="Partner" />
+        <AdSideRail size="160x300" smartLinkLabel="Partner" />
+      </aside>
     </main>
   );
 }

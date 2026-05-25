@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { auth } from "@/lib/googleAuth";
 import { updateUserProfileById } from "@/lib/users";
+import { enforceSameOrigin } from "@/lib/security";
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -14,6 +15,9 @@ const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   try {
     const session = await auth();
     const userId = session?.user?.id;
@@ -22,7 +26,8 @@ export async function POST(req: Request) {
     const form = await req.formData();
     const file = form.get("file") as File | null;
     if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-    if (!file.type.startsWith("image/")) {
+    const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
+    if (!allowedImageTypes.has(file.type)) {
       return NextResponse.json({ error: "Only image files are allowed" }, { status: 400 });
     }
     if (file.size > MAX_UPLOAD_BYTES) {

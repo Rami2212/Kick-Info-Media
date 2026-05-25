@@ -1,6 +1,7 @@
 import { requireAdminAuth } from "@/lib/adminAuth";
 import { getSiteSettings, updateSiteSettings, type CoverPageSettings, type SiteSettings } from "@/lib/siteSettings";
 import { NextResponse } from "next/server";
+import { enforceSameOrigin } from "@/lib/security";
 
 export async function GET() {
   try {
@@ -35,6 +36,9 @@ function parseExtra(payload: Record<string, unknown>): Record<string, unknown> |
 }
 
 export async function PUT(req: Request) {
+  const sameOriginError = enforceSameOrigin(req);
+  if (sameOriginError) return sameOriginError;
+
   const admin = await requireAdminAuth();
 
   if (!admin.ok) {
@@ -50,6 +54,13 @@ export async function PUT(req: Request) {
 
   const coverPage = parseCoverPage(body);
   const extra = parseExtra(body);
+
+  if (extra) {
+    const serialized = JSON.stringify(extra);
+    if (serialized.length > 500_000) {
+      return NextResponse.json({ error: "Settings payload too large" }, { status: 413 });
+    }
+  }
 
   if (!coverPage && !extra) {
     return NextResponse.json({ error: "No valid settings provided" }, { status: 400 });

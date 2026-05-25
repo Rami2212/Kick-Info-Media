@@ -2,6 +2,7 @@ import { listBlogPosts } from "@/lib/blogPosts";
 import { listCategories } from "@/lib/categories";
 import BlogCard from "../components/BlogCard";
 import Link from "next/link";
+import { AdSideRail } from "@/app/components/ads/Ads";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -192,6 +193,10 @@ export default async function PostsPage({ searchParams }: Props) {
             </div>
           )}
         </div>
+
+        <aside className="posts-page-side">
+          <AdSideRail size="160x600" smartLinkLabel="Sponsor" />
+        </aside>
       </section>
     </>
   );

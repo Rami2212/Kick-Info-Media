@@ -2,7 +2,7 @@ import { randomUUID, randomBytes, scrypt as scryptCb, timingSafeEqual } from "cr
 import { promisify } from "util";
 import { getMongoDb } from "@/lib/mongodb";
 
-export type Gender = "male" | "female" | "couple" | "transgender";
+export type Gender = "male" | "female" | "other";
 export type UserRole = "user" | "admin";
 
 export interface PublicUserProfile {
