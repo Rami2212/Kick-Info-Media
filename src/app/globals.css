@@ -941,6 +941,20 @@ main > section + section {
 
 /* Side articles */
 .hero-side { display: flex; flex-direction: column; gap: 2px; }
+.hero-side-desktop-ads {
+  display: contents;
+}
+.hero-side-mobile-ad {
+  display: none;
+  min-height: auto;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+.side-card.hero-side-mobile-ad {
+  display: none !important;
+}
 .side-card {
   position: relative;
   overflow: hidden;
@@ -3279,6 +3293,11 @@ main > section + section {
   align-items: center;
   gap: 8px;
 }
+.schedule-section-save-actions {
+  margin-top: 12px;
+  width: 100%;
+  justify-content: flex-end;
+}
 .schedule-editor-success,
 .schedule-editor-error {
   margin-top: 8px;
@@ -4637,6 +4656,9 @@ main > section + section {
   gap: 10px;
   padding: 10px;
 }
+.fan-poll-ad-mobile {
+  display: none;
+}
 .responsive-ads-bar {
   width: 100%;
   margin: 14px 0;
@@ -4644,19 +4666,26 @@ main > section + section {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background: #050505;
-  overflow-x: auto;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 .responsive-ads-bar-row {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: nowrap;
   gap: 12px;
   min-width: max-content;
 }
 .responsive-ads-slot {
   flex: 0 0 auto;
   display: block;
-  overflow: hidden;
+  overflow: visible;
+}
+.responsive-ads-slot > div,
+.responsive-ads-slot iframe {
+  display: block;
+  margin: 0 auto;
 }
 
 /* ── FOOTER ── */
@@ -5140,7 +5169,19 @@ main > section + section {
   .hero-grid { grid-template-columns: 1fr; }
   .hero-side { flex-direction: column; }
   .side-card { min-height: 160px; }
+  .hero-side-desktop-ads {
+    display: none;
+  }
+  .hero-side-mobile-ad {
+    display: none;
+  }
   .live-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fan-poll-ad-desktop {
+    display: none;
+  }
+  .fan-poll-ad-mobile {
+    display: flex;
+  }
   .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .product-detail-grid { grid-template-columns: 1fr; }
   .cart-layout,
@@ -5258,6 +5299,9 @@ main > section + section {
 }
 
 @media (max-width: 768px) {
+  .side-card.hero-side-mobile-ad {
+    display: flex !important;
+  }
   .hero-side-arrow {
     width: 44px;
     height: 44px;
@@ -5272,6 +5316,87 @@ main > section + section {
   .hero-title { font-size: 36px; }
   .hero-side { flex-direction: column; }
   .live-grid { grid-template-columns: 1fr; }
+  .live-page {
+    padding: 24px 10px 42px;
+  }
+  .live-match-card {
+    padding: 12px;
+  }
+  .live-match-card-top {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .live-match-title {
+    font-size: clamp(22px, 8vw, 34px);
+    line-height: 1.04;
+    overflow-wrap: anywhere;
+  }
+  .live-status-pill {
+    align-self: flex-start;
+  }
+  .live-scoreline {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+  }
+  .live-score-team,
+  .live-score-team-away {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .live-score-team strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+  .live-score-team-away .live-team-flag {
+    order: 1;
+  }
+  .live-score-team-away strong {
+    order: 2;
+  }
+  .live-team-flag {
+    width: 44px;
+    height: 28px;
+  }
+  .live-score-box {
+    justify-content: center;
+    align-self: center;
+    font-size: clamp(28px, 14vw, 44px);
+  }
+  .live-match-meta-grid p {
+    width: 100%;
+  }
+  .live-stat-row {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) 56px;
+    align-items: center;
+    gap: 8px;
+  }
+  .live-stat-row span {
+    overflow-wrap: anywhere;
+  }
+  .live-lineup-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .live-lineup-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+  }
+  .live-lineup-row strong {
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
   .products-grid { grid-template-columns: 1fr; }
   .product-gallery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cart-item-card { grid-template-columns: 1fr; }
@@ -5393,6 +5518,10 @@ main > section + section {
     grid-template-columns: 1fr;
     padding: 24px 10px 40px;
     gap: 14px;
+  }
+  .teams-group-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
   .teams-layout-side-left,
   .team-single-side-left {

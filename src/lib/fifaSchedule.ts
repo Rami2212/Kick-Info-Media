@@ -19,7 +19,6 @@ export type FifaScheduleData = {
 };
 
 const MIN_SLOT_ID = 1;
-const MAX_SLOT_ID = 64;
 
 const DEFAULT_FIXTURES: FifaScheduleFixture[] = [
   { id: "M74", stage: "Round of 32", date: "06/30/2026", time: "02:00", slotA: 1, slotB: 2 },
@@ -70,7 +69,7 @@ function normalizeSlot(value: unknown): number {
   const parsed = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(parsed)) return 0;
   const clean = Math.floor(parsed);
-  if (clean < MIN_SLOT_ID || clean > MAX_SLOT_ID) return 0;
+  if (clean < MIN_SLOT_ID) return 0;
   return clean;
 }
 

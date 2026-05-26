@@ -4,6 +4,7 @@ import { type DragEvent, type KeyboardEvent, useEffect, useMemo, useRef, useStat
 import { useRouter } from "next/navigation";
 import type { ScheduleBracketSlot } from "@/lib/scheduleBracket";
 import type { ScheduleGroup } from "@/lib/scheduleGroupStage";
+import ResponsiveAdSlotsBar from "@/app/components/ads/ResponsiveAdSlotsBar";
 
 type StageSide = "left" | "right" | "center";
 
@@ -494,13 +495,17 @@ export default function ScheduleBracketClient({
   );
   const [groupDragSource, setGroupDragSource] = useState<GroupDragPoint | null>(null);
   const [groupDropTarget, setGroupDropTarget] = useState<GroupDragPoint | null>(null);
+  const [groupTapSource, setGroupTapSource] = useState<GroupDragPoint | null>(null);
   const [thirdPlaceDragSource, setThirdPlaceDragSource] = useState<ThirdPlaceDragPoint | null>(null);
   const [thirdPlaceDropTarget, setThirdPlaceDropTarget] = useState<ThirdPlaceDragPoint | null>(null);
+  const [thirdPlaceTapSource, setThirdPlaceTapSource] = useState<ThirdPlaceDragPoint | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [canvasWidth, setCanvasWidth] = useState(CANVAS_WIDTH);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const bracketScrollerRef = useRef<HTMLDivElement | null>(null);
+  const matchCardRefs = useRef<Record<string, HTMLElement | null>>({});
   const loginRedirectPath = "/login?callbackUrl=%2Ffifa-game";
   const registerRedirectPath = "/register?callbackUrl=%2Ffifa-game";
   const widthScale = canvasWidth / CANVAS_WIDTH;
@@ -527,6 +532,22 @@ export default function ScheduleBracketClient({
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+
+    const mediaQuery = window.matchMedia("(pointer: coarse)");
+    const updateTouchState = () => setIsTouchDevice(mediaQuery.matches);
+    updateTouchState();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", updateTouchState);
+      return () => mediaQuery.removeEventListener("change", updateTouchState);
+    }
+
+    mediaQuery.addListener(updateTouchState);
+    return () => mediaQuery.removeListener(updateTouchState);
+  }, []);
+
   const slotMap = useMemo(() => new Map(slots.map((slot) => [slot.id, slot])), [slots]);
   const winnerByMatch = useMemo(() => buildWinnerMap(slots), [slots]);
   const thirdPlaceCandidates = useMemo(() => buildThirdPlaceCandidates(groups), [groups]);
@@ -547,8 +568,36 @@ export default function ScheduleBracketClient({
     router.push(loginRedirectPath);
   }
 
+  function centerMatchCardInView(matchId: string) {
+    if (!isTouchDevice) return;
+
+    const scroller = bracketScrollerRef.current;
+    const card = matchCardRefs.current[matchId];
+    if (!scroller || !card) return;
+
+    const scrollerRect = scroller.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const maxScrollLeft = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+    const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+
+    const deltaLeft = cardRect.left - scrollerRect.left - (scroller.clientWidth - cardRect.width) / 2;
+    const deltaTop = cardRect.top - scrollerRect.top - (scroller.clientHeight - cardRect.height) / 2;
+
+    const targetLeft = Math.min(maxScrollLeft, Math.max(0, scroller.scrollLeft + deltaLeft));
+    const targetTop = Math.min(maxScrollTop, Math.max(0, scroller.scrollTop + deltaTop));
+
+    scroller.scrollTo({
+      left: targetLeft,
+      top: targetTop,
+      behavior: "smooth",
+    });
+
+    card.focus({ preventScroll: true });
+  }
+
   function applyMatchWinner(match: BracketMatch, selectedSlotId: number) {
     if (isViewer) return;
+    centerMatchCardInView(match.id);
     const outcome = MATCH_OUTCOMES[match.id];
     if (!outcome) return;
 
@@ -595,6 +644,46 @@ export default function ScheduleBracketClient({
     }
   }
 
+  function swapGroupTeams(source: GroupDragPoint, target: GroupDragPoint) {
+    if (source.groupIndex === target.groupIndex && source.teamIndex === target.teamIndex) return;
+
+    setGroups((prev) => {
+      const next = cloneGroups(prev);
+      const sourceGroup = next[source.groupIndex];
+      const targetGroup = next[target.groupIndex];
+      if (!sourceGroup || !targetGroup) return prev;
+
+      const sourceTeam = sourceGroup.teams[source.teamIndex];
+      const targetTeam = targetGroup.teams[target.teamIndex];
+      if (!sourceTeam || !targetTeam) return prev;
+
+      sourceGroup.teams[source.teamIndex] = targetTeam;
+      targetGroup.teams[target.teamIndex] = sourceTeam;
+
+      setSlots((prevSlots) => syncSlotsFromSelections(prevSlots, next, thirdPlaceOrder));
+      return next;
+    });
+
+    setSaved(false);
+    setError("");
+  }
+
+  function moveThirdPlace(source: ThirdPlaceDragPoint, target: ThirdPlaceDragPoint) {
+    if (source.index === target.index) return;
+
+    setSaved(false);
+    setError("");
+
+    setThirdPlaceOrder((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(source.index, 1);
+      if (!moved) return prev;
+      next.splice(target.index, 0, moved);
+      setSlots((prevSlots) => syncSlotsFromSelections(prevSlots, groups, next));
+      return next;
+    });
+  }
+
   function onGroupTeamDragStart(event: DragEvent<HTMLDivElement>, source: GroupDragPoint) {
     if (isViewer) return;
     if (!isLoggedIn) {
@@ -608,6 +697,7 @@ export default function ScheduleBracketClient({
       return;
     }
     event.dataTransfer.effectAllowed = "move";
+    setGroupTapSource(null);
     setGroupDragSource(source);
     setGroupDropTarget(null);
   }
@@ -632,35 +722,46 @@ export default function ScheduleBracketClient({
     const source = groupDragSource;
     setGroupDropTarget(null);
     setGroupDragSource(null);
+    setGroupTapSource(null);
 
     if (!source) return;
-    if (source.groupIndex === target.groupIndex && source.teamIndex === target.teamIndex) return;
-
-    setGroups((prev) => {
-      const next = cloneGroups(prev);
-      const sourceGroup = next[source.groupIndex];
-      const targetGroup = next[target.groupIndex];
-      if (!sourceGroup || !targetGroup) return prev;
-
-      const sourceTeam = sourceGroup.teams[source.teamIndex];
-      const targetTeam = targetGroup.teams[target.teamIndex];
-      if (!sourceTeam || !targetTeam) return prev;
-
-      sourceGroup.teams[source.teamIndex] = targetTeam;
-      targetGroup.teams[target.teamIndex] = sourceTeam;
-
-      setSlots((prevSlots) => syncSlotsFromSelections(prevSlots, next, thirdPlaceOrder));
-      return next;
-    });
-
-    setSaved(false);
-    setError("");
+    swapGroupTeams(source, target);
   }
 
   function onGroupTeamDragEnd() {
     if (isViewer) return;
     setGroupDropTarget(null);
     setGroupDragSource(null);
+  }
+
+  function onGroupTeamRowClick(target: GroupDragPoint) {
+    if (isViewer) return;
+    if (groupDragSource) return;
+    if (!isLoggedIn) {
+      redirectToLogin();
+      return;
+    }
+
+    const targetTeam = groups[target.groupIndex]?.teams[target.teamIndex];
+    if (!targetTeam) return;
+
+    if (!groupTapSource) {
+      if (isEmptyGroupTeam(targetTeam)) return;
+      setGroupTapSource(target);
+      setGroupDropTarget(target);
+      return;
+    }
+
+    if (groupTapSource.groupIndex === target.groupIndex && groupTapSource.teamIndex === target.teamIndex) {
+      setGroupTapSource(null);
+      setGroupDropTarget(null);
+      return;
+    }
+
+    const source = groupTapSource;
+    setGroupTapSource(null);
+    setGroupDropTarget(null);
+    swapGroupTeams(source, target);
   }
 
   function onGroupTeamChipClick(groupIndex: number, team: ScheduleGroup["teams"][number]) {
@@ -671,6 +772,8 @@ export default function ScheduleBracketClient({
     }
     if (isEmptyGroupTeam(team)) return;
 
+    setGroupTapSource(null);
+    setGroupDropTarget(null);
     setSaved(false);
     setError("");
 
@@ -706,6 +809,8 @@ export default function ScheduleBracketClient({
       return;
     }
 
+    setGroupTapSource(null);
+    setGroupDropTarget(null);
     setSaved(false);
     setError("");
 
@@ -727,6 +832,7 @@ export default function ScheduleBracketClient({
       return;
     }
     event.dataTransfer.effectAllowed = "move";
+    setThirdPlaceTapSource(null);
     setThirdPlaceDragSource(source);
     setThirdPlaceDropTarget(null);
   }
@@ -751,25 +857,41 @@ export default function ScheduleBracketClient({
     const source = thirdPlaceDragSource;
     setThirdPlaceDragSource(null);
     setThirdPlaceDropTarget(null);
+    setThirdPlaceTapSource(null);
     if (!source || source.index === target.index) return;
-
-    setSaved(false);
-    setError("");
-
-    setThirdPlaceOrder((prev) => {
-      const next = [...prev];
-      const [moved] = next.splice(source.index, 1);
-      if (!moved) return prev;
-      next.splice(target.index, 0, moved);
-      setSlots((prevSlots) => syncSlotsFromSelections(prevSlots, groups, next));
-      return next;
-    });
+    moveThirdPlace(source, target);
   }
 
   function onThirdPlaceDragEnd() {
     if (isViewer) return;
     setThirdPlaceDragSource(null);
     setThirdPlaceDropTarget(null);
+  }
+
+  function onThirdPlaceRowClick(target: ThirdPlaceDragPoint) {
+    if (isViewer) return;
+    if (thirdPlaceDragSource) return;
+    if (!isLoggedIn) {
+      redirectToLogin();
+      return;
+    }
+
+    if (!thirdPlaceTapSource) {
+      setThirdPlaceTapSource(target);
+      setThirdPlaceDropTarget(target);
+      return;
+    }
+
+    if (thirdPlaceTapSource.index === target.index) {
+      setThirdPlaceTapSource(null);
+      setThirdPlaceDropTarget(null);
+      return;
+    }
+
+    const source = thirdPlaceTapSource;
+    setThirdPlaceTapSource(null);
+    setThirdPlaceDropTarget(null);
+    moveThirdPlace(source, target);
   }
 
   async function saveChanges() {
@@ -815,6 +937,21 @@ export default function ScheduleBracketClient({
     }
   }
 
+  function renderSectionSaveAction() {
+    return (
+      <div className="schedule-editor-actions schedule-section-save-actions">
+        <button
+          type="button"
+          className="admin-button admin-button-blue"
+          onClick={saveChanges}
+          disabled={saving || !isLoggedIn}
+        >
+          {saving ? "Saving..." : "Save All"}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="schedule-editor-shell">
       {!isViewer && !isLoggedIn ? (
@@ -847,7 +984,9 @@ export default function ScheduleBracketClient({
         <div>
           <p className="schedule-editor-help">
             {isLoggedIn
-              ? "Click flags to fill groups, drag to reorder, click bracket winners, then save."
+              ? isTouchDevice
+                ? "Tap flags to fill groups, tap one row then another to reorder, tap winners, then save."
+                : "Click flags to fill groups, drag to reorder, click bracket winners, then save."
               : "Login to fill groups, pick winners, and save your game."}
           </p>
         </div>
@@ -925,11 +1064,12 @@ export default function ScheduleBracketClient({
                     <div
                       key={`${group.id}-row-${teamIndex}`}
                       className={`schedule-group-row${isDropTarget ? " schedule-group-row-drop" : ""}${isLoggedIn ? " schedule-group-row-draggable" : ""}`}
-                      draggable={isLoggedIn}
+                      draggable={isLoggedIn && !isTouchDevice}
                       onDragStart={(event) => onGroupTeamDragStart(event, { groupIndex, teamIndex })}
                       onDragOver={(event) => onGroupTeamDragOver(event, { groupIndex, teamIndex })}
                       onDrop={(event) => onGroupTeamDrop(event, { groupIndex, teamIndex })}
                       onDragEnd={onGroupTeamDragEnd}
+                      onClick={() => onGroupTeamRowClick({ groupIndex, teamIndex })}
                     >
                       <span className="schedule-group-rank">{teamIndex + 1}</span>
                       {team.flagImageUrl ? (
@@ -949,6 +1089,20 @@ export default function ScheduleBracketClient({
           ))}
         </div>
       </section>
+      {renderSectionSaveAction()}
+
+      <ResponsiveAdSlotsBar
+          maxSlots={4}
+          adKeys={[
+            "bf62a20e490a361287592a9c51ad8323",
+            "bf62a20e490a361287592a9c51ad8323",
+            "bf62a20e490a361287592a9c51ad8323",
+            "bf62a20e490a361287592a9c51ad8323",
+          ]}
+          mobileAdKeys={[
+            "bf62a20e490a361287592a9c51ad8323",
+          ]}
+      />
 
       <section className="schedule-third-place-wrap">
         <div className="schedule-section-head schedule-third-place-head">
@@ -973,11 +1127,12 @@ export default function ScheduleBracketClient({
                 <div
                   key={`third-place-rank-${groupId}`}
                   className={`schedule-group-row schedule-third-place-row${isQualified ? " schedule-third-place-row-selected" : ""}${isDropTarget ? " schedule-group-row-drop" : ""}${isLoggedIn ? " schedule-group-row-draggable" : ""}`}
-                  draggable={isLoggedIn}
+                  draggable={isLoggedIn && !isTouchDevice}
                   onDragStart={(event) => onThirdPlaceDragStart(event, { index })}
                   onDragOver={(event) => onThirdPlaceDragOver(event, { index })}
                   onDrop={(event) => onThirdPlaceDrop(event, { index })}
                   onDragEnd={onThirdPlaceDragEnd}
+                  onClick={() => onThirdPlaceRowClick({ index })}
                 >
                   <span className="schedule-group-rank">{index + 1}</span>
                   {candidate.flagImageUrl ? (
@@ -995,8 +1150,22 @@ export default function ScheduleBracketClient({
           </div>
         </article>
       </section>
+      {renderSectionSaveAction()}
       </>
       ) : null}
+
+      <ResponsiveAdSlotsBar
+          maxSlots={4}
+          adKeys={[
+            "bf62a20e490a361287592a9c51ad8323",
+            "bf62a20e490a361287592a9c51ad8323",
+            "bf62a20e490a361287592a9c51ad8323",
+            "bf62a20e490a361287592a9c51ad8323",
+          ]}
+          mobileAdKeys={[
+            "bf62a20e490a361287592a9c51ad8323",
+          ]}
+      />
 
       <section className="schedule-bracket-wrap schedule-bracket-wrap-full">
         <div className="schedule-section-head schedule-bracket-head">
@@ -1062,8 +1231,13 @@ export default function ScheduleBracketClient({
               return (
                 <article
                   key={match.id}
+                  ref={(element) => {
+                    matchCardRefs.current[match.id] = element;
+                  }}
                   className={`schedule-match-card schedule-match-card-${match.side}`}
                   style={{ left: `${match.x}px`, top: `${match.y}px`, width: `${cardWidth}px` }}
+                  tabIndex={-1}
+                  onClick={() => centerMatchCardInView(match.id)}
                 >
                   {match.title ? <p className="schedule-match-title">{match.title}</p> : null}
                   <div className="schedule-match-id">{match.id}</div>
@@ -1127,6 +1301,7 @@ export default function ScheduleBracketClient({
           </div>
         </div>
       </section>
+      {!isViewer ? renderSectionSaveAction() : null}
     </div>
   );
 }

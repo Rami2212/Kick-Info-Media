@@ -225,14 +225,20 @@ export default function HeroSection({ posts }: HeroSectionProps) {
             </div>
           </Link>
 
-          <div className="side-card side-card-blank">
-            <CompactAdSlot size="468x60" />
-            <CompactAdSlot size="468x60" />
+          <div className="hero-side-desktop-ads">
+            <div className="side-card side-card-blank">
+              <CompactAdSlot size="468x60" />
+              <CompactAdSlot size="468x60" />
+            </div>
+
+            <div className="side-card side-card-blank">
+              <CompactAdSlot size="468x60" />
+              <CompactAdSlot size="468x60" />
+            </div>
           </div>
 
-          <div className="side-card side-card-blank">
-            <CompactAdSlot size="468x60" />
-            <CompactAdSlot size="468x60" />
+          <div className="side-card side-card-blank hero-side-mobile-ad">
+            <CompactAdSlot size="300x250" />
           </div>
         </div>
       </div>

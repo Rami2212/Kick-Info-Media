@@ -53,7 +53,7 @@ export default async function LivePage() {
               </div>
               <div className="live-score-box">
                 <span>{liveMatch.teamA.score}</span>
-                <small>-</small>
+                <small>:</small>
                 <span>{liveMatch.teamB.score}</span>
               </div>
               <div className="live-score-team live-score-team-away">

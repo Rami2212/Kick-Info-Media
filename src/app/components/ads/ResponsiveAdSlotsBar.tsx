@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const AD_WIDTH = 468;
-const AD_HEIGHT = 60;
+const AD_WIDTH = 300;
+const AD_HEIGHT = 250;
 const AD_GAP = 12;
 
 type AdQueueWindow = Window & {
@@ -20,11 +20,12 @@ type AdQueueWindow = Window & {
 export type ResponsiveAdSlotsBarProps = {
   maxSlots?: number;
   adKeys?: string[];
+  mobileAdKeys?: string[];
   enabled?: boolean;
   className?: string;
 };
 
-function runInAdQueue(task: () => Promise<void>) {
+function runInGlobalQueue(task: () => Promise<void>) {
   const queueWindow = window as AdQueueWindow;
   queueWindow.__kimAdQueue = (queueWindow.__kimAdQueue || Promise.resolve())
     .then(task)
@@ -33,19 +34,16 @@ function runInAdQueue(task: () => Promise<void>) {
 }
 
 export default function ResponsiveAdSlotsBar({
-  maxSlots = 4,
-  adKeys = [
-    "73b06254b42b30e1dada76bc6e9ae0ec",
-    "73b06254b42b30e1dada76bc6e9ae0ec",
-    "73b06254b42b30e1dada76bc6e9ae0ec",
-    "73b06254b42b30e1dada76bc6e9ae0ec",
-  ],
+  maxSlots = 2,
+  adKeys = ["73b06254b42b30e1dada76bc6e9ae0ec"],
+  mobileAdKeys = [],
   enabled = true,
   className,
 }: ResponsiveAdSlotsBarProps) {
   const [adSlotCount, setAdSlotCount] = useState(1);
   const rowRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const activeAdKeys = mobileAdKeys.length > 0 ? mobileAdKeys : adKeys;
 
   useEffect(() => {
     if (!enabled) return;
@@ -55,8 +53,8 @@ export default function ResponsiveAdSlotsBar({
     const updateSlots = () => {
       const width = row.clientWidth;
       const fitCount = Math.max(1, Math.floor((width + AD_GAP) / (AD_WIDTH + AD_GAP)));
-      const nextCount = Math.min(maxSlots, fitCount);
-      setAdSlotCount((prev) => (prev === nextCount ? prev : nextCount));
+      const count = Math.min(maxSlots, fitCount);
+      setAdSlotCount((prev) => (prev === count ? prev : count));
     };
 
     updateSlots();
@@ -64,28 +62,30 @@ export default function ResponsiveAdSlotsBar({
     observer.observe(row);
 
     return () => observer.disconnect();
-  }, [enabled, maxSlots]);
+  }, [maxSlots, enabled]);
 
   useEffect(() => {
     if (!enabled) return;
-    let cancelled = false;
-
     slotRefs.current = slotRefs.current.slice(0, adSlotCount);
+
     slotRefs.current.forEach((slot) => {
-      if (slot) slot.innerHTML = "";
+      if (!slot) return;
+      slot.innerHTML = "";
     });
 
-    async function renderSlots() {
+    let cancelled = false;
+
+    const renderSlots = async () => {
       for (let index = 0; index < slotRefs.current.length; index += 1) {
         if (cancelled) return;
         const slot = slotRefs.current[index];
-        if (!slot || !slot.isConnected) continue;
+        if (!slot) continue;
 
-        const slotKey = adKeys[index] || adKeys[0];
+        const slotKey = activeAdKeys[index] || activeAdKeys[0];
         if (!slotKey) continue;
 
-        await runInAdQueue(async () => {
-          if (cancelled || !slot.isConnected) return;
+        await runInGlobalQueue(async () => {
+          if (cancelled) return;
 
           await new Promise<void>((resolve) => {
             slot.innerHTML = "";
@@ -104,9 +104,11 @@ export default function ResponsiveAdSlotsBar({
 
             const invokeScript = document.createElement("script");
             invokeScript.type = "text/javascript";
-            invokeScript.async = false;
             invokeScript.src = `https://www.highperformanceformat.com/${slotKey}/invoke.js?slot=${index}&cb=${Date.now()}`;
-            invokeScript.onload = () => window.setTimeout(() => resolve(), 60);
+            invokeScript.async = false;
+            invokeScript.onload = () => {
+              window.setTimeout(() => resolve(), 60);
+            };
             invokeScript.onerror = () => resolve();
 
             slot.appendChild(configScript);
@@ -114,28 +116,32 @@ export default function ResponsiveAdSlotsBar({
           });
         });
       }
-    }
+    };
 
     void renderSlots();
 
     return () => {
       cancelled = true;
     };
-  }, [adSlotCount, adKeys, enabled]);
+  }, [adSlotCount, activeAdKeys, enabled]);
 
   if (!enabled) return null;
 
   return (
-    <section ref={rowRef} className={`responsive-ads-bar${className ? ` ${className}` : ""}`}>
-      <div className="responsive-ads-bar-row">
+    <section
+      ref={rowRef}
+      className={`responsive-ads-bar${className ? ` ${className}` : ""}`}
+      style={{ overflowX: "hidden" }}
+    >
+      <div className="responsive-ads-bar-row" style={{ flexWrap: "nowrap", minWidth: "max-content" }}>
         {Array.from({ length: adSlotCount }).map((_, index) => (
           <div
             key={`responsive-ad-slot-${index}`}
-            ref={(element) => {
-              slotRefs.current[index] = element;
+            ref={(el) => {
+              slotRefs.current[index] = el;
             }}
             className="responsive-ads-slot"
-            style={{ width: AD_WIDTH, height: AD_HEIGHT }}
+            style={{ width: AD_WIDTH, height: AD_HEIGHT, minWidth: AD_WIDTH, minHeight: AD_HEIGHT, flex: "0 0 auto" }}
           />
         ))}
       </div>

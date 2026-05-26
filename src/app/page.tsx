@@ -159,19 +159,25 @@ export default async function Home() {
             isLoggedIn={loggedIn}
             compact
           />
-          <div className="ad-compact-slot" style={{ marginTop: "14px" }}>
+          <div className="ad-compact-slot fan-poll-ad-desktop" style={{ marginTop: "14px" }}>
             <CompactAdSlot size="460x100" />
+          </div>
+          <div className="ad-compact-slot fan-poll-ad-mobile" style={{ marginTop: "14px" }}>
+            <CompactAdSlot size="300x250" />
           </div>
         </article>
       </section>
 
       <ResponsiveAdSlotsBar
-        maxSlots={4}
+        maxSlots={6}
         adKeys={[
-          "73b06254b42b30e1dada76bc6e9ae0ec",
-          "73b06254b42b30e1dada76bc6e9ae0ec",
-          "73b06254b42b30e1dada76bc6e9ae0ec",
-          "73b06254b42b30e1dada76bc6e9ae0ec",
+          "bf62a20e490a361287592a9c51ad8323",
+          "bf62a20e490a361287592a9c51ad8323",
+          "bf62a20e490a361287592a9c51ad8323",
+          "bf62a20e490a361287592a9c51ad8323",
+        ]}
+        mobileAdKeys={[
+          "bf62a20e490a361287592a9c51ad8323",
         ]}
       />
 
@@ -240,8 +246,7 @@ export default async function Home() {
             </div>
           </Link>
           <div className="home-triple-split-blank ad-compact-slot">
-            <CompactAdSlot size="468x60" />
-            <CompactAdSlot size="468x60" />
+            <CompactAdSlot size="300x250" />
           </div>
         </div>
       </section>
@@ -272,12 +277,15 @@ export default async function Home() {
       </section>
 
       <ResponsiveAdSlotsBar
-          maxSlots={4}
+          maxSlots={6}
           adKeys={[
-            "73b06254b42b30e1dada76bc6e9ae0ec",
-            "73b06254b42b30e1dada76bc6e9ae0ec",
-            "73b06254b42b30e1dada76bc6e9ae0ec",
-            "73b06254b42b30e1dada76bc6e9ae0ec",
+            "bf62a20e490a361287592a9c51ad8323",
+            "bf62a20e490a361287592a9c51ad8323",
+            "bf62a20e490a361287592a9c51ad8323",
+            "bf62a20e490a361287592a9c51ad8323",
+          ]}
+          mobileAdKeys={[
+            "bf62a20e490a361287592a9c51ad8323",
           ]}
       />
 
