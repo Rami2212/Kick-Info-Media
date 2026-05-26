@@ -1,5 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { requireAdminAuth } from "@/lib/adminAuth";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Admin Dashboard | KickInfoMedia",
+  description: "KickInfoMedia admin dashboard for posts, teams, products, users, and site settings.",
+  keywords: mergeSeoKeywords(["admin dashboard", "content management", "site settings"], SEO_DEFAULT_KEYWORDS),
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const auth = await requireAdminAuth();

@@ -1,6 +1,14 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { auth } from "@/lib/googleAuth";
 import LoginForm from "./LoginForm";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Login | KickInfoMedia",
+  description: "Login to access your KickInfoMedia profile, picks, and live football features.",
+  keywords: mergeSeoKeywords(["login", "user account", "football picks"], SEO_DEFAULT_KEYWORDS),
+};
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

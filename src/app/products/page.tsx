@@ -3,10 +3,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { listProducts } from "@/lib/products";
 import { AdSideRail } from "@/app/components/ads/Ads";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Products | KickInfoMedia",
   description: "Shop world cup jerseys and football merchandise.",
+  keywords: mergeSeoKeywords(
+    ["football store", "world cup jerseys", "national team kits", "football merchandise"],
+    SEO_DEFAULT_KEYWORDS,
+  ),
 };
 
 export const dynamic = "force-dynamic";

@@ -1,8 +1,9 @@
-import { getCategoryBySlug, listCategories } from "@/lib/categories";
-import { listBlogPosts } from "@/lib/blogPosts";
-import BlogCard from "../../components/BlogCard";
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { listBlogPosts } from "@/lib/blogPosts";
+import { getCategoryBySlug, listCategories } from "@/lib/categories";
+import BlogCard from "../../components/BlogCard";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords, splitSeoKeywords } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,14 +15,15 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const category = await getCategoryBySlug(slug);
-  
+
   if (!category) {
-    return { title: 'Category Not Found' };
+    return { title: "Category Not Found" };
   }
 
   return {
-    title: `${category.name} News — KickInfoMedia`,
+    title: `${category.name} News - KickInfoMedia`,
     description: category.seo_description || category.description,
+    keywords: mergeSeoKeywords(splitSeoKeywords(category.seo_keywords), SEO_DEFAULT_KEYWORDS),
   };
 }
 
@@ -33,9 +35,9 @@ export default async function CategoryPage({ params }: Props) {
     notFound();
   }
 
-  const posts = await listBlogPosts({ 
-    publishedOnly: true, 
-    categoryId: category.id 
+  const posts = await listBlogPosts({
+    publishedOnly: true,
+    categoryId: category.id,
   });
 
   const categories = await listCategories();
@@ -65,7 +67,7 @@ export default async function CategoryPage({ params }: Props) {
                 categoryName={categoryMap.get(post.category_id)}
                 published={post.published}
                 createdAt={post.created_at}
-                accentColor={index % 2 !== 0 ? 'green' : 'blue'}
+                accentColor={index % 2 !== 0 ? "green" : "blue"}
               />
             ))}
           </div>

@@ -19,6 +19,7 @@ export const POPUNDER_AD = {
 
 export type BannerAdSize =
   | "468x60"
+  | "460x100"
   | "160x300"
   | "320x50"
   | "728x90"
@@ -38,6 +39,14 @@ export const BANNER_AD_UNITS: Record<BannerAdSize, BannerAdUnit> = {
     key: "5df9d8a3c5779965904de51d4bc59bbd",
     width: 468,
     height: 60,
+    format: "iframe",
+    invokeScriptSrc:
+      "https://www.highperformanceformat.com/5df9d8a3c5779965904de51d4bc59bbd/invoke.js",
+  },
+  "460x100": {
+    key: "5df9d8a3c5779965904de51d4bc59bbd",
+    width: 460,
+    height: 100,
     format: "iframe",
     invokeScriptSrc:
       "https://www.highperformanceformat.com/5df9d8a3c5779965904de51d4bc59bbd/invoke.js",

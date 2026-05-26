@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { CompactAdSlot } from "@/app/components/ads/Ads";
 
 type ProfilePayload = {
   username: string;
@@ -210,6 +211,10 @@ export default function ProfileForm() {
             {saving ? "Saving..." : "Save Profile"}
           </button>
         </form>
+
+        <div className="ad-compact-slot" style={{ marginTop: "14px" }}>
+          <CompactAdSlot size="300x250" />
+        </div>
       </section>
     </main>
   );

@@ -36,6 +36,18 @@ import {
   parseScheduleGroupStageJsonText,
   type ScheduleGroupStageData,
 } from "@/lib/scheduleGroupStage";
+import {
+  DEFAULT_FIFA_SCHEDULE_JSON,
+  getDefaultFifaScheduleData,
+  parseFifaScheduleJsonText,
+  type FifaScheduleData,
+} from "@/lib/fifaSchedule";
+import {
+  DEFAULT_LIVE_MATCH_JSON,
+  getDefaultLiveMatchData,
+  parseLiveMatchJsonText,
+  type LiveMatchData,
+} from "@/lib/liveMatch";
 
 export type CoverPageSettings = {
   title: string;
@@ -90,6 +102,10 @@ export type LiveStreamSettings = {
   secondaryStreamUrl: string;
 };
 
+export type LiveMatchSettings = LiveMatchData & {
+  liveMatchJson: string;
+};
+
 export type NextMatchStatSettings = NextMatchStatData & {
   statsJson: string;
 };
@@ -100,6 +116,10 @@ export type ScheduleBracketSettings = ScheduleBracketData & {
 
 export type ScheduleGroupStageSettings = ScheduleGroupStageData & {
   groupStageJson: string;
+};
+
+export type FifaScheduleSettings = FifaScheduleData & {
+  scheduleJson: string;
 };
 
 type SiteSettingsDoc = SiteSettings & {
@@ -237,6 +257,28 @@ export function getScheduleGroupStageSettings(settings: SiteSettings): ScheduleG
   return {
     ...data,
     groupStageJson: raw || DEFAULT_SCHEDULE_GROUP_STAGE_JSON,
+  };
+}
+
+export function getFifaScheduleSettings(settings: SiteSettings): FifaScheduleSettings {
+  const raw = normalizeText(settings.extra.fifaScheduleJson);
+  const parsed = parseFifaScheduleJsonText(raw);
+  const data = parsed || getDefaultFifaScheduleData();
+
+  return {
+    ...data,
+    scheduleJson: raw || DEFAULT_FIFA_SCHEDULE_JSON,
+  };
+}
+
+export function getLiveMatchSettings(settings: SiteSettings): LiveMatchSettings {
+  const raw = normalizeText(settings.extra.liveMatchJson);
+  const parsed = parseLiveMatchJsonText(raw);
+  const data = parsed || getDefaultLiveMatchData();
+
+  return {
+    ...data,
+    liveMatchJson: raw || DEFAULT_LIVE_MATCH_JSON,
   };
 }
 
@@ -392,4 +434,3 @@ export async function incrementWorldCupVote(matchId: string, side: "a" | "b"): P
 
   return toSettings(next);
 }
-

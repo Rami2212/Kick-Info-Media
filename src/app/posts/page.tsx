@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import { listBlogPosts } from "@/lib/blogPosts";
 import { listCategories } from "@/lib/categories";
 import BlogCard from "../components/BlogCard";
 import Link from "next/link";
 import { AdSideRail } from "@/app/components/ads/Ads";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "All Posts | KickInfoMedia",
+  description: "Browse football news, transfer stories, and tactical analysis from KickInfoMedia.",
+  keywords: mergeSeoKeywords(["football posts", "transfer news", "tactical analysis"], SEO_DEFAULT_KEYWORDS),
+};
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

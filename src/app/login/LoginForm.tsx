@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { CompactAdSlot } from "@/app/components/ads/Ads";
 
 type LoginFormProps = {
   googleEnabled: boolean;
@@ -133,6 +134,10 @@ export default function LoginForm({ googleEnabled }: LoginFormProps) {
         <p className="auth-foot">
           Don&apos;t have an account? <Link href="/register">Create one</Link>
         </p>
+
+        <div className="ad-compact-slot" style={{ marginTop: "12px" }}>
+          <CompactAdSlot size="300x250" />
+        </div>
       </section>
     </main>
   );

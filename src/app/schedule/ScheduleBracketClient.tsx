@@ -236,9 +236,32 @@ const GROUP_SLOT_MAP: Record<string, { first: number; second: number }> = {
   L: { first: 53, second: 9 },
 };
 
+const EMPTY_GROUP_TEAM = { code: "", name: "", flagImageUrl: "" };
+const SAVED_EMPTY_GROUP_TEAM = { code: "-", name: "TBD", flagImageUrl: "" };
+
 function normalizeName(value: string | undefined): string {
   const clean = (value || "").trim().toLowerCase();
   return clean === "tbd" ? "" : clean;
+}
+
+function normalizeCode(value: string | undefined): string {
+  const clean = (value || "").trim().toUpperCase();
+  return clean === "-" ? "" : clean;
+}
+
+function isEmptyGroupTeam(team: { code?: string; name?: string } | null | undefined): boolean {
+  return !normalizeCode(team?.code) && !normalizeName(team?.name);
+}
+
+function sameGroupTeam(
+  a: { code?: string; name?: string; flagImageUrl?: string } | null | undefined,
+  b: { code?: string; name?: string; flagImageUrl?: string } | null | undefined,
+): boolean {
+  return (
+    normalizeCode(a?.code) === normalizeCode(b?.code) &&
+    normalizeName(a?.name) === normalizeName(b?.name) &&
+    (a?.flagImageUrl || "").trim() === (b?.flagImageUrl || "").trim()
+  );
 }
 
 function isSameTeam(a: ScheduleBracketSlot | undefined, b: ScheduleBracketSlot | undefined): boolean {
@@ -273,15 +296,53 @@ function cloneGroups(groups: ScheduleGroup[]): ScheduleGroup[] {
   }));
 }
 
+function normalizeGroupsForEditor(groups: ScheduleGroup[]): ScheduleGroup[] {
+  return groups.map((group) => ({
+    ...group,
+    teams: group.teams.map((team) =>
+      isEmptyGroupTeam(team)
+        ? { ...EMPTY_GROUP_TEAM }
+        : {
+            code: (team.code || "").trim(),
+            name: (team.name || "").trim(),
+            flagImageUrl: (team.flagImageUrl || "").trim(),
+          },
+    ),
+  }));
+}
+
+function createEmptyGroupsFromTemplate(groups: ScheduleGroup[]): ScheduleGroup[] {
+  return groups.map((group) => ({
+    ...group,
+    teams: group.teams.map(() => ({ ...EMPTY_GROUP_TEAM })),
+  }));
+}
+
+function toSavableGroups(groups: ScheduleGroup[]): ScheduleGroup[] {
+  return groups.map((group) => ({
+    ...group,
+    teams: group.teams.map((team) =>
+      isEmptyGroupTeam(team)
+        ? { ...SAVED_EMPTY_GROUP_TEAM }
+        : {
+            code: (team.code || "").trim(),
+            name: (team.name || "").trim(),
+            flagImageUrl: (team.flagImageUrl || "").trim(),
+          },
+    ),
+  }));
+}
+
 function buildThirdPlaceCandidates(groups: ScheduleGroup[]): ThirdPlaceCandidate[] {
   return groups.map((group) => {
-    const third = group.teams[2] || { code: "-", name: "TBD", flagImageUrl: "" };
+    const third = group.teams[2];
+    const hasThird = !!third && !isEmptyGroupTeam(third);
     return {
       groupId: group.id,
       groupName: group.name,
-      code: third.code || "-",
-      name: third.name || "TBD",
-      flagImageUrl: third.flagImageUrl || "",
+      code: hasThird ? third.code : "-",
+      name: hasThird ? third.name : "TBD",
+      flagImageUrl: hasThird ? (third.flagImageUrl || "") : "",
     };
   });
 }
@@ -400,23 +461,35 @@ export default function ScheduleBracketClient({
   initialGroups,
   isLoggedIn,
   mode = "editor",
+  catalogGroups,
+  startEmptySelection = false,
 }: {
   initialSlots: ScheduleBracketSlot[];
   initialGroups: ScheduleGroup[];
   isLoggedIn: boolean;
   mode?: "editor" | "viewer";
+  catalogGroups?: ScheduleGroup[];
+  startEmptySelection?: boolean;
 }) {
   const isViewer = mode === "viewer";
   const router = useRouter();
-  const [groups, setGroups] = useState<ScheduleGroup[]>(initialGroups);
+  const groupCatalog = useMemo(
+    () => normalizeGroupsForEditor(catalogGroups && catalogGroups.length > 0 ? catalogGroups : initialGroups),
+    [catalogGroups, initialGroups],
+  );
+  const editorInitialGroups = useMemo(() => {
+    const base = normalizeGroupsForEditor(initialGroups);
+    return startEmptySelection ? createEmptyGroupsFromTemplate(groupCatalog.length ? groupCatalog : base) : base;
+  }, [groupCatalog, initialGroups, startEmptySelection]);
+  const [groups, setGroups] = useState<ScheduleGroup[]>(editorInitialGroups);
   const [thirdPlaceOrder, setThirdPlaceOrder] = useState<string[]>(() =>
-    buildInitialThirdPlaceOrder(initialGroups, initialSlots),
+    buildInitialThirdPlaceOrder(editorInitialGroups, initialSlots),
   );
   const [slots, setSlots] = useState<ScheduleBracketSlot[]>(() =>
     syncSlotsFromSelections(
       initialSlots,
-      initialGroups,
-      buildInitialThirdPlaceOrder(initialGroups, initialSlots),
+      editorInitialGroups,
+      buildInitialThirdPlaceOrder(editorInitialGroups, initialSlots),
     ),
   );
   const [groupDragSource, setGroupDragSource] = useState<GroupDragPoint | null>(null);
@@ -429,6 +502,7 @@ export default function ScheduleBracketClient({
   const [canvasWidth, setCanvasWidth] = useState(CANVAS_WIDTH);
   const bracketScrollerRef = useRef<HTMLDivElement | null>(null);
   const loginRedirectPath = "/login?callbackUrl=%2Ffifa-game";
+  const registerRedirectPath = "/register?callbackUrl=%2Ffifa-game";
   const widthScale = canvasWidth / CANVAS_WIDTH;
   const cardWidth = CARD_WIDTH * widthScale;
 
@@ -528,6 +602,11 @@ export default function ScheduleBracketClient({
       redirectToLogin();
       return;
     }
+    const sourceTeam = groups[source.groupIndex]?.teams[source.teamIndex];
+    if (!sourceTeam || isEmptyGroupTeam(sourceTeam)) {
+      event.preventDefault();
+      return;
+    }
     event.dataTransfer.effectAllowed = "move";
     setGroupDragSource(source);
     setGroupDropTarget(null);
@@ -582,6 +661,62 @@ export default function ScheduleBracketClient({
     if (isViewer) return;
     setGroupDropTarget(null);
     setGroupDragSource(null);
+  }
+
+  function onGroupTeamChipClick(groupIndex: number, team: ScheduleGroup["teams"][number]) {
+    if (isViewer) return;
+    if (!isLoggedIn) {
+      redirectToLogin();
+      return;
+    }
+    if (isEmptyGroupTeam(team)) return;
+
+    setSaved(false);
+    setError("");
+
+    setGroups((prev) => {
+      const next = cloneGroups(prev);
+      const group = next[groupIndex];
+      if (!group) return prev;
+
+      const existingIndex = group.teams.findIndex((rowTeam) => sameGroupTeam(rowTeam, team));
+      if (existingIndex >= 0) {
+        const compact = group.teams.filter((_, index) => index !== existingIndex);
+        while (compact.length < 4) compact.push({ ...EMPTY_GROUP_TEAM });
+        group.teams = compact;
+      } else {
+        const emptyIndex = group.teams.findIndex((rowTeam) => isEmptyGroupTeam(rowTeam));
+        if (emptyIndex < 0) return prev;
+        group.teams[emptyIndex] = {
+          code: (team.code || "").trim(),
+          name: (team.name || "").trim(),
+          flagImageUrl: (team.flagImageUrl || "").trim(),
+        };
+      }
+
+      setSlots((prevSlots) => syncSlotsFromSelections(prevSlots, next, thirdPlaceOrder));
+      return next;
+    });
+  }
+
+  function resetGroupSelection(groupIndex: number) {
+    if (isViewer) return;
+    if (!isLoggedIn) {
+      redirectToLogin();
+      return;
+    }
+
+    setSaved(false);
+    setError("");
+
+    setGroups((prev) => {
+      const next = cloneGroups(prev);
+      const group = next[groupIndex];
+      if (!group) return prev;
+      group.teams = group.teams.map(() => ({ ...EMPTY_GROUP_TEAM }));
+      setSlots((prevSlots) => syncSlotsFromSelections(prevSlots, next, thirdPlaceOrder));
+      return next;
+    });
   }
 
   function onThirdPlaceDragStart(event: DragEvent<HTMLDivElement>, source: ThirdPlaceDragPoint) {
@@ -649,10 +784,12 @@ export default function ScheduleBracketClient({
     setSaved(false);
 
     try {
+      const groupsForSave = toSavableGroups(groups);
+
       const res = await fetch("/api/schedule-bracket", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slots, groups }),
+        body: JSON.stringify({ slots, groups: groupsForSave }),
       });
 
       const data = (await res.json()) as { error?: string; slots?: ScheduleBracketSlot[]; groups?: ScheduleGroup[] };
@@ -668,7 +805,7 @@ export default function ScheduleBracketClient({
         setSlots(data.slots);
       }
       if (Array.isArray(data.groups)) {
-        setGroups(data.groups);
+        setGroups(normalizeGroupsForEditor(data.groups));
       }
       setSaved(true);
     } catch (err) {
@@ -695,7 +832,7 @@ export default function ScheduleBracketClient({
               <button
                 type="button"
                 className="admin-button admin-button-ghost"
-                onClick={() => router.push("/register")}
+                onClick={() => router.push(registerRedirectPath)}
               >
                 Register
               </button>
@@ -710,8 +847,8 @@ export default function ScheduleBracketClient({
         <div>
           <p className="schedule-editor-help">
             {isLoggedIn
-              ? "Drag teams to reorder group places, click bracket winners, then save."
-              : "Login to reorder groups, pick winners, and save schedule changes."}
+              ? "Click flags to fill groups, drag to reorder, click bracket winners, then save."
+              : "Login to fill groups, pick winners, and save your game."}
           </p>
         </div>
         <div className="schedule-editor-actions">
@@ -726,7 +863,7 @@ export default function ScheduleBracketClient({
         </div>
       </section>
 
-      {saved ? <p className="schedule-editor-success">Group stage and bracket saved to database.</p> : null}
+      {saved ? <p className="schedule-editor-success">Your group stage and bracket picks are saved to your account.</p> : null}
       {error ? <p className="schedule-editor-error">{error}</p> : null}
 
       <section className="schedule-groups-wrap">
@@ -738,24 +875,45 @@ export default function ScheduleBracketClient({
             <article key={group.id} className="schedule-group-card">
               <header className="schedule-group-card-head">
                 <h3 className="schedule-group-card-title">{group.name}</h3>
-                <span className="schedule-group-head-icon" aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                </span>
+                <div className="schedule-group-card-tools">
+                  {!isViewer ? (
+                    <button
+                      type="button"
+                      className="schedule-group-reset-button"
+                      onClick={() => resetGroupSelection(groupIndex)}
+                      disabled={!isLoggedIn}
+                    >
+                      Reset
+                    </button>
+                  ) : null}
+                  <span className="schedule-group-head-icon" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                </div>
               </header>
 
               <div className="schedule-group-chip-row">
-                {group.teams.map((team) => (
-                  <div key={`${group.id}-${team.code}-${team.name}`} className="schedule-group-chip">
-                    {team.flagImageUrl ? (
-                      <img src={team.flagImageUrl} alt={`${team.name} flag`} className="schedule-group-chip-flag" />
-                    ) : (
-                      <span className="schedule-group-chip-flag schedule-group-chip-flag-empty" aria-hidden="true" />
-                    )}
-                    <span>{team.code}</span>
-                  </div>
-                ))}
+                {(groupCatalog[groupIndex]?.teams || []).map((team, teamIndex) => {
+                  const selected = group.teams.some((rowTeam) => sameGroupTeam(rowTeam, team));
+                  return (
+                    <button
+                      key={`${group.id}-${team.code}-${team.name}-${teamIndex}`}
+                      type="button"
+                      className={`schedule-group-chip schedule-group-chip-button${selected ? " schedule-group-chip-selected" : ""}`}
+                      onClick={() => onGroupTeamChipClick(groupIndex, team)}
+                      disabled={isViewer || !isLoggedIn}
+                    >
+                      {team.flagImageUrl ? (
+                        <img src={team.flagImageUrl} alt={`${team.name} flag`} className="schedule-group-chip-flag" />
+                      ) : (
+                        <span className="schedule-group-chip-flag schedule-group-chip-flag-empty" aria-hidden="true" />
+                      )}
+                      <span>{team.code || "-"}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="schedule-group-table">

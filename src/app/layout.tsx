@@ -4,10 +4,12 @@ import Ticker from "./components/Ticker";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { NativeBannerAd, PopunderAdGate, SocialBarAdGate } from "./components/ads/Ads";
+import { SEO_DEFAULT_DESCRIPTION, SEO_DEFAULT_KEYWORDS } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "KickInfoMedia — Breaking Football News, Transfers & Analysis",
-  description: "The premier destination for breaking football news, tactical analysis, and live coverage from across the globe.",
+  title: "KickInfoMedia - Breaking Football News, Transfers & Analysis",
+  description: SEO_DEFAULT_DESCRIPTION,
+  keywords: SEO_DEFAULT_KEYWORDS,
 };
 
 export default function RootLayout({

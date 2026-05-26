@@ -21,6 +21,11 @@ export type ScheduleBracketConnection = {
 };
 
 const SLOT_COUNT = 64;
+const USER_PICK_SLOT_IDS = new Set<number>([
+  ...Array.from({ length: 30 }, (_, index) => index + 17),
+  63,
+  64,
+]);
 
 const SEED_TEAMS: Array<{ name: string; flagCode: string }> = [
   { name: "Mexico", flagCode: "mx" },
@@ -233,6 +238,17 @@ export function parseScheduleBracketJsonText(value: string): ScheduleBracketData
   } catch {
     return null;
   }
+}
+
+export function resetScheduleBracketUserPicks(slots: ScheduleBracketSlot[]): ScheduleBracketSlot[] {
+  return slots.map((slot) => {
+    if (!USER_PICK_SLOT_IDS.has(slot.id)) return slot;
+    return {
+      ...slot,
+      name: "TBD",
+      flagImageUrl: "",
+    };
+  });
 }
 
 function appendRangeLayouts(

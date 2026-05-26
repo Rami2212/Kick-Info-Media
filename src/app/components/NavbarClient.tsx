@@ -14,10 +14,10 @@ const menuLinks = [
   { href: "/posts", label: "Posts" },
   { href: "/teams", label: "Teams" },
   { href: "/fifa-game", label: "FIFA Game" },
-  { href: "/fifa-world-cup", label: "FIFA" },
+  { href: "/fifa-world-cup", label: "World Cup 2026" },
   { href: "/live", label: "Live" },
   { href: "/rankings", label: "Rankings" },
-  { href: "/football", label: "Live Data" },
+  { href: "/football", label: "Matches" },
 ];
 
 export default function NavbarClient({ loggedIn }: NavbarClientProps) {

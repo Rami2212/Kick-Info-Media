@@ -5,6 +5,7 @@ import { getBlogPostBySlug } from "@/lib/blogPosts";
 import { getCategoryById } from "@/lib/categories";
 import { AdSideRail } from "@/app/components/ads/Ads";
 import { sanitizeRichHtml } from "@/lib/security";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords, splitSeoKeywords } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -24,6 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${post.title} - KickInfoMedia`,
     description: post.seo_description || post.excerpt,
+    keywords: mergeSeoKeywords(splitSeoKeywords(post.seo_keywords), SEO_DEFAULT_KEYWORDS),
   };
 }
 
@@ -77,9 +79,7 @@ export default async function PostPage({ params }: Props) {
             <h1 className="post-page-title">{post.title}</h1>
             <p className="post-page-excerpt">{post.excerpt}</p>
             <div className="post-meta-bar">
-              <span className="author-name">Editorial Team</span>
-              <span>.</span>
-              <span>{dateStr}</span>
+              <span className="author-name">{dateStr}</span>
               <span>.</span>
               <span>{Math.max(1, Math.ceil(post.content.length / 1000))} min read</span>
             </div>

@@ -3,10 +3,15 @@ import Link from "next/link";
 import RankingsTable from "@/app/components/RankingsTable";
 import { getRankingsSettings, getSiteSettings } from "@/lib/siteSettings";
 import { AdSideRail } from "@/app/components/ads/Ads";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "FIFA Rankings | KickInfoMedia",
   description: "Men and Women FIFA rankings with country flags and points.",
+  keywords: mergeSeoKeywords(
+    ["fifa rankings", "world rankings", "men fifa ranking", "women fifa ranking"],
+    SEO_DEFAULT_KEYWORDS,
+  ),
 };
 
 export const dynamic = "force-dynamic";

@@ -19,13 +19,18 @@ import RankingsTable from "./components/RankingsTable";
 import HomeGroupAQuickPick from "./components/HomeGroupAQuickPick";
 import { CompactAdSlot } from "./components/ads/Ads";
 import ResponsiveAdSlotsBar from "./components/ads/ResponsiveAdSlotsBar";
+import { SEO_DEFAULT_DESCRIPTION, SEO_DEFAULT_KEYWORDS, mergeSeoKeywords } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "KickInfoMedia - Breaking Football News, Transfers & Analysis",
-  description: "The premier destination for breaking football news, tactical analysis, and live coverage from across the globe.",
+  description: SEO_DEFAULT_DESCRIPTION,
+  keywords: mergeSeoKeywords(
+    ["football homepage", "latest football updates", "FIFA news", "world cup news"],
+    SEO_DEFAULT_KEYWORDS,
+  ),
 };
 
 export default async function Home() {
@@ -41,13 +46,14 @@ export default async function Home() {
   const groupStage = getScheduleGroupStageSettings(settings);
   const groupA =
     groupStage.groups.find((group) => group.id.trim().toUpperCase() === "A") || groupStage.groups[0] || null;
-  let apiSportsError = "";
-  const apiSportsNextMatch = await getNextFifa2026MatchFromApiSports().catch((error: unknown) => {
-    if (error instanceof Error) {
-      apiSportsError = error.message;
-    }
-    return null;
-  });
+  const apiSportsResult = await getNextFifa2026MatchFromApiSports()
+    .then((match) => ({ match, error: "" }))
+    .catch((error: unknown) => ({
+      match: null,
+      error: error instanceof Error ? error.message : "Unknown error",
+    }));
+  const apiSportsNextMatch = apiSportsResult.match;
+  const apiSportsError = apiSportsResult.error;
   const nextMatchCard = apiSportsNextMatch || {
     title: "FIFA 2026 - Next Match",
     subtitle: apiSportsError ? `Live API data unavailable (${apiSportsError})` : "Live API data unavailable",
@@ -119,8 +125,8 @@ export default async function Home() {
         <div className="home-triple-split">
           <Link href="/live" className="home-triple-split-live">
             <p className="home-triple-kicker">Watch Live</p>
-            <h3 className="home-triple-title">Live Match Stream</h3>
-            <p className="home-triple-desc">Jump into the live feed and watch the action in real time.</p>
+            <h3 className="home-triple-title">Live Match Stats</h3>
+            <p className="home-triple-desc">Open the live match center for score, stats, and lineup updates.</p>
             <div className="home-triple-live-row">
               <span className="home-triple-live-dot"></span>
               <span className="home-triple-live-text">Live Now</span>
@@ -153,6 +159,9 @@ export default async function Home() {
             isLoggedIn={loggedIn}
             compact
           />
+          <div className="ad-compact-slot" style={{ marginTop: "14px" }}>
+            <CompactAdSlot size="460x100" />
+          </div>
         </article>
       </section>
 
@@ -220,13 +229,13 @@ export default async function Home() {
         </article>
 
         <div className="home-triple-split">
-          <Link href="/live" className="home-triple-split-live">
-            <p className="home-triple-kicker">Watch Live</p>
-            <h3 className="home-triple-title">Live Match Stream</h3>
-            <p className="home-triple-desc">Jump into the live feed and watch the action in real time.</p>
+          <Link href="/fifa-world-cup" className="home-triple-split-live">
+            <p className="home-triple-kicker">Schedule</p>
+            <h3 className="home-triple-title">FIFA World Cup Schedule</h3>
+            <p className="home-triple-desc">Open the fixture list with kickoff times, countries, and match stages.</p>
             <div className="home-triple-live-row">
-              <span className="home-triple-live-dot"></span>
-              <span className="home-triple-live-text">Live Now</span>
+              <span className="home-triple-live-dot home-triple-live-dot-schedule"></span>
+              <span className="home-triple-live-text">View Schedule</span>
               <span className="home-triple-live-arrow">-&gt;</span>
             </div>
           </Link>

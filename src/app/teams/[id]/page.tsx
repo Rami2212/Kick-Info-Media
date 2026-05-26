@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { getTeamBySlugOrId } from "@/lib/teams";
-import { AdSideRail, AutoStackedAdSideRail } from "@/app/components/ads/Ads";
+import { AdSideRail } from "@/app/components/ads/Ads";
 import { sanitizeRichHtml } from "@/lib/security";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -11,6 +13,28 @@ export const revalidate = 0;
 type Props = {
   params: Promise<{ id: string }>;
 };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const team = await getTeamBySlugOrId(id);
+
+  if (!team || !team.published) {
+    return {
+      title: "Team Not Found | KickInfoMedia",
+      description: "The requested team page is unavailable.",
+      keywords: SEO_DEFAULT_KEYWORDS,
+    };
+  }
+
+  return {
+    title: `${team.country} Team | KickInfoMedia`,
+    description: `Profile, group details, and squad updates for ${team.country}.`,
+    keywords: mergeSeoKeywords(
+      [team.country, team.group, "national team", "world cup squad"],
+      SEO_DEFAULT_KEYWORDS,
+    ),
+  };
+}
 
 export default async function TeamDetailPage({ params }: Props) {
   const { id } = await params;

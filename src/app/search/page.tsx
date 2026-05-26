@@ -5,10 +5,15 @@ import { listBlogPosts } from "@/lib/blogPosts";
 import { listCategories } from "@/lib/categories";
 import { listTeams, teamCountryToSlug } from "@/lib/teams";
 import { AdSideRail } from "@/app/components/ads/Ads";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Search | KickInfoMedia",
   description: "Search posts, teams, and categories.",
+  keywords: mergeSeoKeywords(
+    ["football search", "search teams", "search world cup posts"],
+    SEO_DEFAULT_KEYWORDS,
+  ),
 };
 
 export const dynamic = "force-dynamic";

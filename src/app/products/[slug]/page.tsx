@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/lib/products";
 import ProductAddToCartPanel from "@/app/components/ProductAddToCartPanel";
 import { sanitizeRichHtml } from "@/lib/security";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,6 +24,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${product.name} | KickInfoMedia`,
     description: `${product.team} ${product.category} - ${product.currency} ${product.price.toFixed(2)}`,
+    keywords: mergeSeoKeywords(
+      [product.name, product.team, product.category, "football jersey", "world cup merchandise"].filter(Boolean),
+      SEO_DEFAULT_KEYWORDS,
+    ),
   };
 }
 

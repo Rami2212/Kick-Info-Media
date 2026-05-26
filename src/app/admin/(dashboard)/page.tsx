@@ -2,6 +2,14 @@ import { listBlogPosts } from "@/lib/blogPosts";
 import { listCategories } from "@/lib/categories";
 import { listProducts } from "@/lib/products";
 import Link from "next/link";
+import type { Metadata } from "next";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Admin Overview | KickInfoMedia",
+  description: "Overview of posts, categories, products, and quick actions in the KickInfoMedia admin.",
+  keywords: mergeSeoKeywords(["admin overview", "editorial stats"], SEO_DEFAULT_KEYWORDS),
+};
 
 export default async function AdminDashboard() {
   const [posts, categories, products] = await Promise.all([

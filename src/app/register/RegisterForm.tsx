@@ -7,10 +7,19 @@ import { signIn } from "next-auth/react";
 
 type RegisterFormProps = {
   googleEnabled: boolean;
+  callbackUrl: string;
 };
 
-export default function RegisterForm({ googleEnabled }: RegisterFormProps) {
+function sanitizeCallbackUrl(input: string): string {
+  if (!input) return "/profile";
+  if (!input.startsWith("/")) return "/profile";
+  if (input.startsWith("//")) return "/profile";
+  return input;
+}
+
+export default function RegisterForm({ googleEnabled, callbackUrl }: RegisterFormProps) {
   const router = useRouter();
+  const safeCallbackUrl = sanitizeCallbackUrl(callbackUrl);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,15 +60,15 @@ export default function RegisterForm({ googleEnabled }: RegisterFormProps) {
         email: email.trim().toLowerCase(),
         password,
         redirect: false,
-        callbackUrl: "/profile",
+        callbackUrl: safeCallbackUrl,
       });
 
       if (signInResult?.error) {
-        router.push("/login");
+        router.push(`/login?callbackUrl=${encodeURIComponent(safeCallbackUrl)}`);
         return;
       }
 
-      router.push(signInResult?.url || "/profile");
+      router.push(signInResult?.url || safeCallbackUrl);
       router.refresh();
     } catch {
       setError("Registration failed. Please try again.");
@@ -72,7 +81,7 @@ export default function RegisterForm({ googleEnabled }: RegisterFormProps) {
     setGoogleLoading(true);
     setError("");
     try {
-      await signIn("google", { callbackUrl: "/profile" });
+      await signIn("google", { callbackUrl: safeCallbackUrl });
     } catch {
       setError("Google sign up failed. Please try again.");
       setGoogleLoading(false);
@@ -162,7 +171,7 @@ export default function RegisterForm({ googleEnabled }: RegisterFormProps) {
         )}
 
         <p className="auth-foot">
-          Already have an account? <Link href="/login">Sign in</Link>
+          Already have an account? <Link href={`/login?callbackUrl=${encodeURIComponent(safeCallbackUrl)}`}>Sign in</Link>
         </p>
       </section>
     </main>

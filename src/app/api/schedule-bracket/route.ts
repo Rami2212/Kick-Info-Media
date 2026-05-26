@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { requireAdminAuth } from "@/lib/adminAuth";
+import { auth } from "@/lib/googleAuth";
 import {
   getScheduleBracketSettings,
   getScheduleGroupStageSettings,
   getSiteSettings,
-  updateSiteSettings,
 } from "@/lib/siteSettings";
-import { parseScheduleBracketData } from "@/lib/scheduleBracket";
+import { parseScheduleBracketData, resetScheduleBracketUserPicks } from "@/lib/scheduleBracket";
 import { parseScheduleGroupStageData } from "@/lib/scheduleGroupStage";
-import { enforceSameOrigin } from "@/lib/security";
+import { checkRateLimit, enforceSameOrigin } from "@/lib/security";
+import { getUserScheduleGame, upsertUserScheduleGame } from "@/lib/userScheduleGame";
 
 type BracketPayload = {
   slots?: unknown;
@@ -17,10 +17,27 @@ type BracketPayload = {
 
 export async function GET() {
   try {
-    const settings = await getSiteSettings();
+    const [session, settings] = await Promise.all([auth(), getSiteSettings()]);
     const bracket = getScheduleBracketSettings(settings);
     const groupStage = getScheduleGroupStageSettings(settings);
-    return NextResponse.json({ slots: bracket.slots, groups: groupStage.groups });
+
+    const userId = session?.user?.id ? String(session.user.id) : "";
+    if (userId) {
+      const userGame = await getUserScheduleGame(userId);
+      if (userGame) {
+        return NextResponse.json({
+          slots: userGame.slots,
+          groups: userGame.groups,
+          source: "user",
+        });
+      }
+    }
+
+    return NextResponse.json({
+      slots: resetScheduleBracketUserPicks(bracket.slots),
+      groups: groupStage.groups,
+      source: "default",
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load bracket";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -31,9 +48,18 @@ export async function PUT(req: Request) {
   const sameOriginError = enforceSameOrigin(req);
   if (sameOriginError) return sameOriginError;
 
-  const admin = await requireAdminAuth();
-  if (!admin.ok) {
-    return NextResponse.json({ error: "Only admins can edit bracket settings." }, { status: 401 });
+  const rateLimit = checkRateLimit(req, "user-schedule-save", 20, 60 * 1000);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many save attempts. Please wait a moment." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
+    );
+  }
+
+  const session = await auth();
+  const userId = session?.user?.id ? String(session.user.id) : "";
+  if (!userId) {
+    return NextResponse.json({ error: "Please login to save your game." }, { status: 401 });
   }
 
   let body: BracketPayload;
@@ -44,40 +70,23 @@ export async function PUT(req: Request) {
   }
 
   try {
-    const settings = await getSiteSettings();
-    const currentBracket = getScheduleBracketSettings(settings);
-    const currentGroupStage = getScheduleGroupStageSettings(settings);
-
-    let nextSlots = currentBracket.slots;
-    let nextGroups = currentGroupStage.groups;
-
-    if (body.slots !== undefined) {
-      const parsedBracket = parseScheduleBracketData({ slots: body.slots });
-      if (!parsedBracket) {
-        return NextResponse.json({ error: "Invalid bracket payload" }, { status: 400 });
-      }
-      nextSlots = parsedBracket.slots;
+    const parsedBracket = parseScheduleBracketData({ slots: body.slots });
+    if (!parsedBracket) {
+      return NextResponse.json({ error: "Invalid bracket payload" }, { status: 400 });
     }
 
-    if (body.groups !== undefined) {
-      const parsedGroups = parseScheduleGroupStageData({ groups: body.groups });
-      if (!parsedGroups) {
-        return NextResponse.json({ error: "Invalid group stage payload" }, { status: 400 });
-      }
-      nextGroups = parsedGroups.groups;
+    const parsedGroups = parseScheduleGroupStageData({ groups: body.groups });
+    if (!parsedGroups) {
+      return NextResponse.json({ error: "Invalid group stage payload" }, { status: 400 });
     }
 
-    const bracketJson = JSON.stringify({ slots: nextSlots }, null, 2);
-    const groupStageJson = JSON.stringify({ groups: nextGroups }, null, 2);
-
-    await updateSiteSettings({
-      extra: {
-        scheduleBracketJson: bracketJson,
-        scheduleGroupStageJson: groupStageJson,
-      },
+    const savedGame = await upsertUserScheduleGame({
+      userId,
+      slots: parsedBracket.slots,
+      groups: parsedGroups.groups,
     });
 
-    return NextResponse.json({ slots: nextSlots, groups: nextGroups, saved: true });
+    return NextResponse.json({ ...savedGame, saved: true, source: "user" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to save bracket";
     return NextResponse.json({ error: message }, { status: 500 });

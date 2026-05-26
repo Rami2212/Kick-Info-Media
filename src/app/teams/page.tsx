@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { listTeams, teamCountryToSlug } from "@/lib/teams";
 import { TEAM_GROUPS } from "@/lib/teamGroups";
 import { AdSideRail, AutoStackedAdSideRail } from "@/app/components/ads/Ads";
+import { SEO_DEFAULT_KEYWORDS, mergeSeoKeywords } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Teams | KickInfoMedia",
+  description: "Explore FIFA World Cup teams by group with squad profiles and country pages.",
+  keywords: mergeSeoKeywords(["world cup teams", "national squads", "group stage teams"], SEO_DEFAULT_KEYWORDS),
+};
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
