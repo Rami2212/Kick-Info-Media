@@ -736,6 +736,7 @@ export default function ScheduleBracketClient({
 
   function onGroupTeamRowClick(target: GroupDragPoint) {
     if (isViewer) return;
+    if (isTouchDevice) return;
     if (groupDragSource) return;
     if (!isLoggedIn) {
       redirectToLogin();
@@ -762,6 +763,35 @@ export default function ScheduleBracketClient({
     setGroupTapSource(null);
     setGroupDropTarget(null);
     swapGroupTeams(source, target);
+  }
+
+  function moveGroupTeamByStep(groupIndex: number, teamIndex: number, delta: -1 | 1) {
+    if (isViewer) return;
+    if (!isLoggedIn) {
+      redirectToLogin();
+      return;
+    }
+
+    const targetIndex = teamIndex + delta;
+    if (targetIndex < 0 || targetIndex >= (groups[groupIndex]?.teams.length || 0)) return;
+
+    setGroupTapSource(null);
+    setGroupDropTarget(null);
+    setSaved(false);
+    setError("");
+
+    setGroups((prev) => {
+      const next = cloneGroups(prev);
+      const group = next[groupIndex];
+      if (!group) return prev;
+
+      const [moved] = group.teams.splice(teamIndex, 1);
+      if (!moved) return prev;
+      group.teams.splice(targetIndex, 0, moved);
+
+      setSlots((prevSlots) => syncSlotsFromSelections(prevSlots, next, thirdPlaceOrder));
+      return next;
+    });
   }
 
   function onGroupTeamChipClick(groupIndex: number, team: ScheduleGroup["teams"][number]) {
@@ -870,6 +900,7 @@ export default function ScheduleBracketClient({
 
   function onThirdPlaceRowClick(target: ThirdPlaceDragPoint) {
     if (isViewer) return;
+    if (isTouchDevice) return;
     if (thirdPlaceDragSource) return;
     if (!isLoggedIn) {
       redirectToLogin();
@@ -892,6 +923,31 @@ export default function ScheduleBracketClient({
     setThirdPlaceTapSource(null);
     setThirdPlaceDropTarget(null);
     moveThirdPlace(source, target);
+  }
+
+  function moveThirdPlaceByStep(index: number, delta: -1 | 1) {
+    if (isViewer) return;
+    if (!isLoggedIn) {
+      redirectToLogin();
+      return;
+    }
+
+    const targetIndex = index + delta;
+    if (targetIndex < 0 || targetIndex >= thirdPlaceOrder.length) return;
+
+    setThirdPlaceTapSource(null);
+    setThirdPlaceDropTarget(null);
+    setSaved(false);
+    setError("");
+
+    setThirdPlaceOrder((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(index, 1);
+      if (!moved) return prev;
+      next.splice(targetIndex, 0, moved);
+      setSlots((prevSlots) => syncSlotsFromSelections(prevSlots, groups, next));
+      return next;
+    });
   }
 
   async function saveChanges() {
@@ -985,7 +1041,7 @@ export default function ScheduleBracketClient({
           <p className="schedule-editor-help">
             {isLoggedIn
               ? isTouchDevice
-                ? "Tap flags to fill groups, tap one row then another to reorder, tap winners, then save."
+                ? "Tap flags to fill groups, use arrows to reorder countries, tap winners, then save."
                 : "Click flags to fill groups, drag to reorder, click bracket winners, then save."
               : "Login to fill groups, pick winners, and save your game."}
           </p>
@@ -1069,7 +1125,7 @@ export default function ScheduleBracketClient({
                       onDragOver={(event) => onGroupTeamDragOver(event, { groupIndex, teamIndex })}
                       onDrop={(event) => onGroupTeamDrop(event, { groupIndex, teamIndex })}
                       onDragEnd={onGroupTeamDragEnd}
-                      onClick={() => onGroupTeamRowClick({ groupIndex, teamIndex })}
+                      onClick={isTouchDevice ? undefined : () => onGroupTeamRowClick({ groupIndex, teamIndex })}
                     >
                       <span className="schedule-group-rank">{teamIndex + 1}</span>
                       {team.flagImageUrl ? (
@@ -1078,9 +1134,32 @@ export default function ScheduleBracketClient({
                         <span className="schedule-group-row-flag schedule-group-chip-flag-empty" aria-hidden="true" />
                       )}
                       <span className="schedule-group-row-name">{team.name || "-"}</span>
-                      <span className="schedule-group-row-handle" aria-hidden="true">
-                        ≡
-                      </span>
+                      {isTouchDevice ? (
+                        <span className="schedule-group-row-mobile-move" onClick={(event) => event.stopPropagation()}>
+                          <button
+                            type="button"
+                            className="schedule-group-row-move-btn"
+                            aria-label={`Move ${team.name || "team"} up`}
+                            onClick={() => moveGroupTeamByStep(groupIndex, teamIndex, -1)}
+                            disabled={!isLoggedIn || teamIndex === 0}
+                          >
+                            ▲
+                          </button>
+                          <button
+                            type="button"
+                            className="schedule-group-row-move-btn"
+                            aria-label={`Move ${team.name || "team"} down`}
+                            onClick={() => moveGroupTeamByStep(groupIndex, teamIndex, 1)}
+                            disabled={!isLoggedIn || teamIndex === group.teams.length - 1}
+                          >
+                            ▼
+                          </button>
+                        </span>
+                      ) : (
+                        <span className="schedule-group-row-handle" aria-hidden="true">
+                          ≡
+                        </span>
+                      )}
                     </div>
                   );
                 })}
@@ -1132,7 +1211,7 @@ export default function ScheduleBracketClient({
                   onDragOver={(event) => onThirdPlaceDragOver(event, { index })}
                   onDrop={(event) => onThirdPlaceDrop(event, { index })}
                   onDragEnd={onThirdPlaceDragEnd}
-                  onClick={() => onThirdPlaceRowClick({ index })}
+                  onClick={isTouchDevice ? undefined : () => onThirdPlaceRowClick({ index })}
                 >
                   <span className="schedule-group-rank">{index + 1}</span>
                   {candidate.flagImageUrl ? (
@@ -1141,9 +1220,32 @@ export default function ScheduleBracketClient({
                     <span className="schedule-group-row-flag schedule-group-chip-flag-empty" aria-hidden="true" />
                   )}
                   <span className="schedule-group-row-name">{candidate.name}</span>
-                  <span className="schedule-group-row-handle" aria-hidden="true">
-                    {isQualified ? (bracketSlot?.code || "Q") : "-"}
-                  </span>
+                  {isTouchDevice ? (
+                    <span className="schedule-group-row-mobile-move" onClick={(event) => event.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="schedule-group-row-move-btn"
+                        aria-label={`Move ${candidate.name} up`}
+                        onClick={() => moveThirdPlaceByStep(index, -1)}
+                        disabled={!isLoggedIn || index === 0}
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        className="schedule-group-row-move-btn"
+                        aria-label={`Move ${candidate.name} down`}
+                        onClick={() => moveThirdPlaceByStep(index, 1)}
+                        disabled={!isLoggedIn || index === thirdPlaceOrder.length - 1}
+                      >
+                        ▼
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="schedule-group-row-handle" aria-hidden="true">
+                      {isQualified ? (bracketSlot?.code || "Q") : "-"}
+                    </span>
+                  )}
                 </div>
               );
             })}

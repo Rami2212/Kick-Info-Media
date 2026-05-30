@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type DragEvent, useState } from "react";
+import { type DragEvent, useEffect, useState } from "react";
 import type { ScheduleGroup } from "@/lib/scheduleGroupStage";
 
 type HomeGroupAQuickPickProps = {
@@ -31,6 +31,23 @@ export default function HomeGroupAQuickPick({ group }: HomeGroupAQuickPickProps)
   const [teams, setTeams] = useState(() => catalogTeams.map(() => ({ ...EMPTY_TEAM })));
   const [dragSourceIndex, setDragSourceIndex] = useState<number | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+
+    const mediaQuery = window.matchMedia("(pointer: coarse)");
+    const syncTouchState = () => setIsTouchDevice(mediaQuery.matches);
+    syncTouchState();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", syncTouchState);
+      return () => mediaQuery.removeEventListener("change", syncTouchState);
+    }
+
+    mediaQuery.addListener(syncTouchState);
+    return () => mediaQuery.removeListener(syncTouchState);
+  }, []);
 
   function onReset() {
     setTeams(catalogTeams.map(() => ({ ...EMPTY_TEAM })));
@@ -94,6 +111,19 @@ export default function HomeGroupAQuickPick({ group }: HomeGroupAQuickPickProps)
     setDropTargetIndex(null);
   }
 
+  function moveTeamByStep(fromIndex: number, delta: -1 | 1) {
+    const toIndex = fromIndex + delta;
+    if (toIndex < 0 || toIndex >= teams.length) return;
+
+    setTeams((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      if (!moved) return prev;
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  }
+
   return (
     <article className="home-game-pick-panel">
       <p className="home-triple-kicker">Quick Pick</p>
@@ -147,7 +177,7 @@ export default function HomeGroupAQuickPick({ group }: HomeGroupAQuickPickProps)
                 <div
                   key={`home-groupA-row-${team.code}-${team.name}-${index}`}
                   className={`schedule-group-row home-game-pick-row schedule-group-row-draggable${dropTargetIndex === index ? " schedule-group-row-drop" : ""}`}
-                  draggable
+                  draggable={!isTouchDevice}
                   onDragStart={(event) => onDragStart(event, index)}
                   onDragOver={(event) => onDragOver(event, index)}
                   onDrop={(event) => onDrop(event, index)}
@@ -160,7 +190,30 @@ export default function HomeGroupAQuickPick({ group }: HomeGroupAQuickPickProps)
                     <span className="schedule-group-row-flag schedule-group-chip-flag-empty" aria-hidden="true" />
                   )}
                   <span className="schedule-group-row-name">{team.name || "-"}</span>
-                  <span className="schedule-group-row-handle" aria-hidden="true">|||</span>
+                  {isTouchDevice ? (
+                    <span className="schedule-group-row-mobile-move" onClick={(event) => event.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="schedule-group-row-move-btn"
+                        aria-label={`Move ${team.name || "team"} up`}
+                        onClick={() => moveTeamByStep(index, -1)}
+                        disabled={index === 0}
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        className="schedule-group-row-move-btn"
+                        aria-label={`Move ${team.name || "team"} down`}
+                        onClick={() => moveTeamByStep(index, 1)}
+                        disabled={index === teams.length - 1}
+                      >
+                        ▼
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="schedule-group-row-handle" aria-hidden="true">|||</span>
+                  )}
                 </div>
               ))}
             </div>

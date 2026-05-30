@@ -3514,6 +3514,30 @@ main > section + section {
   overflow: visible;
   color: rgba(232, 233, 233, 0.76);
 }
+.schedule-group-row-mobile-move {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.schedule-group-row-move-btn {
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(240, 244, 251, 0.94);
+  font-family: var(--heading);
+  font-size: 9px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.schedule-group-row-move-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 .schedule-groups-wrap .schedule-group-row-handle {
   font-size: 0;
 }
@@ -5411,6 +5435,11 @@ main > section + section {
   .schedule-third-place-board { grid-template-columns: 1fr; }
   .schedule-group-card-title { font-size: 20px; }
   .schedule-group-row-name { font-size: 15px; }
+  .schedule-group-row-move-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
   .rankings-page { padding: 32px 14px 50px; }
   .rankings-page-panel { padding: 10px; }
   .cats-grid { grid-template-columns: repeat(2, 1fr); }
